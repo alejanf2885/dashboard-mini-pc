@@ -111,8 +111,16 @@ def read_network():
 _net_iface_state: dict = {}
 
 
+# Prefixes that identify virtual/internal interfaces to exclude from display
+_VIRT_PREFIXES = ("veth", "br-", "docker", "virbr", "lo", "dummy", "ifb")
+
+
+def _is_physical(name: str) -> bool:
+    return not any(name.startswith(p) for p in _VIRT_PREFIXES)
+
+
 def _parse_proc_net_dev():
-    """Parse /proc/1/net/dev (host namespace when pid:host is active)."""
+    """Parse /proc/1/net/dev — returns host interfaces when pid:host is active."""
     ifaces = {}
     try:
         with open("/proc/1/net/dev") as f:
@@ -121,8 +129,6 @@ def _parse_proc_net_dev():
                 if len(parts) < 10:
                     continue
                 name = parts[0].rstrip(":")
-                if name == "lo":
-                    continue
                 ifaces[name] = {"recv": int(parts[1]), "sent": int(parts[9])}
     except Exception:
         pass
@@ -133,18 +139,18 @@ def read_net_per_iface():
     now = time.time()
     raw = _parse_proc_net_dev()
     if not raw:
-        # fallback: psutil (container interfaces only)
         try:
             raw = {
                 k: {"sent": v.bytes_sent, "recv": v.bytes_recv}
                 for k, v in psutil.net_io_counters(pernic=True).items()
-                if k != "lo"
             }
         except Exception:
             return []
 
     result = []
     for iface, counters in raw.items():
+        if not _is_physical(iface):
+            continue
         sent, recv = counters["sent"], counters["recv"]
         prev = _net_iface_state.get(iface)
         up_kbps, down_kbps = 0.0, 0.0
