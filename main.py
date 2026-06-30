@@ -23,6 +23,59 @@ ALERT_TEMP_THRESHOLD = int(os.getenv("ALERT_TEMP_THRESHOLD", "75"))
 _alert_cooldown: dict[str, float] = {}
 ALERT_COOLDOWN_SECS = 600
 
+RAPL_BASE = "/sys/class/powercap"
+_power_state: dict[str, float] = {"energy_uj": None, "ts": None, "watts": None}
+
+
+def _rapl_domains():
+    domains = []
+    try:
+        for entry in os.listdir(RAPL_BASE):
+            if entry.startswith("intel-rapl:") and entry.count(":") == 1:
+                path = os.path.join(RAPL_BASE, entry, "energy_uj")
+                max_path = os.path.join(RAPL_BASE, entry, "max_energy_range_uj")
+                if os.path.exists(path):
+                    domains.append((path, max_path))
+    except Exception:
+        pass
+    return domains
+
+
+def _read_energy_uj():
+    total = 0
+    found = False
+    for path, _ in _rapl_domains():
+        try:
+            with open(path) as f:
+                total += int(f.read().strip())
+                found = True
+        except Exception:
+            pass
+    return total if found else None
+
+
+def read_power_watts():
+    """Vatios del paquete CPU calculados sobre el delta de energía RAPL."""
+    energy = _read_energy_uj()
+    now = time.time()
+    if energy is None:
+        return None
+    prev_e = _power_state["energy_uj"]
+    prev_t = _power_state["ts"]
+    _power_state["energy_uj"] = energy
+    _power_state["ts"] = now
+    if prev_e is None or prev_t is None:
+        return _power_state["watts"]
+    dt = now - prev_t
+    de = energy - prev_e
+    if de < 0:  # el contador RAPL se desbordó
+        return _power_state["watts"]
+    if dt <= 0:
+        return _power_state["watts"]
+    watts = round((de / 1_000_000) / dt, 1)
+    _power_state["watts"] = watts
+    return watts
+
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
@@ -37,6 +90,10 @@ async def init_db():
             )
         """)
         await db.execute("CREATE INDEX IF NOT EXISTS idx_ts ON metrics(ts)")
+        try:
+            await db.execute("ALTER TABLE metrics ADD COLUMN power REAL")
+        except Exception:
+            pass
         await db.execute("""
             CREATE TABLE IF NOT EXISTS services (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -70,11 +127,13 @@ async def collect_metrics():
                         temp = max(t.current for t in temps[key])
                         break
 
+            power = read_power_watts()
+
             ts = int(time.time())
             async with aiosqlite.connect(DB_PATH) as db:
                 await db.execute(
-                    "INSERT INTO metrics (ts, cpu, ram, temp, disk) VALUES (?,?,?,?,?)",
-                    (ts, cpu, ram, temp, disk),
+                    "INSERT INTO metrics (ts, cpu, ram, temp, disk, power) VALUES (?,?,?,?,?,?)",
+                    (ts, cpu, ram, temp, disk, power),
                 )
                 await db.commit()
 
@@ -162,6 +221,7 @@ async def current():
         "disk_total_gb": round(disk.total / 1024**3, 1),
         "disk_pct": round(disk.percent, 1),
         "temp": temp,
+        "power": read_power_watts(),
     }
 
 
@@ -175,11 +235,11 @@ async def history(day: str | None = None):
     end = start + 86400
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
-            "SELECT ts, cpu, ram, temp FROM metrics WHERE ts >= ? AND ts < ? ORDER BY ts",
+            "SELECT ts, cpu, ram, temp, power FROM metrics WHERE ts >= ? AND ts < ? ORDER BY ts",
             (start, end),
         ) as cur:
             rows = await cur.fetchall()
-    return [{"ts": r[0], "cpu": r[1], "ram": r[2], "temp": r[3]} for r in rows]
+    return [{"ts": r[0], "cpu": r[1], "ram": r[2], "temp": r[3], "power": r[4]} for r in rows]
 
 
 @app.get("/api/peaks")
@@ -192,7 +252,7 @@ async def peaks(day: str | None = None):
     end = start + 86400
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
-            "SELECT ts, cpu, ram, temp FROM metrics WHERE ts >= ? AND ts < ?",
+            "SELECT ts, cpu, ram, temp, power FROM metrics WHERE ts >= ? AND ts < ?",
             (start, end),
         ) as cur:
             rows = await cur.fetchall()
@@ -201,6 +261,7 @@ async def peaks(day: str | None = None):
     peak_cpu = max(rows, key=lambda r: r[1] or 0)
     peak_ram = max(rows, key=lambda r: r[2] or 0)
     peak_temp = max(rows, key=lambda r: r[3] or 0)
+    peak_power = max(rows, key=lambda r: r[4] or 0)
 
     def fmt(ts):
         return datetime.fromtimestamp(ts).strftime("%H:%M")
@@ -209,7 +270,39 @@ async def peaks(day: str | None = None):
         "cpu": {"value": round(peak_cpu[1], 1), "time": fmt(peak_cpu[0])},
         "ram": {"value": round(peak_ram[2], 1), "time": fmt(peak_ram[0])},
         "temp": {"value": round(peak_temp[3], 1) if peak_temp[3] else None, "time": fmt(peak_temp[0])},
+        "power": {"value": round(peak_power[4], 1) if peak_power[4] else None, "time": fmt(peak_power[0])},
     }
+
+
+@app.get("/api/discover")
+async def discover():
+    """Lista contenedores Docker con puertos publicados leyendo el socket."""
+    def _list():
+        import re
+        import docker
+        client = docker.from_env()
+        results = []
+        seen = set()
+        for c in client.containers.list():
+            name = c.labels.get("com.docker.compose.service") or re.sub(
+                r"-[a-z0-9]{16,}$", "", c.name
+            )
+            ports = (c.attrs.get("NetworkSettings", {}).get("Ports") or {})
+            for _cport, mappings in ports.items():
+                if not mappings:
+                    continue
+                for m in mappings:
+                    hp = m.get("HostPort")
+                    if not hp or hp in seen:
+                        continue
+                    seen.add(hp)
+                    results.append({"name": name, "port": hp})
+        return results
+
+    try:
+        return await asyncio.to_thread(_list)
+    except Exception as e:
+        return {"error": str(e)}
 
 
 @app.get("/api/services")
@@ -268,6 +361,7 @@ async def stream():
                 "ram_pct": round(mem.percent, 1),
                 "ram_used_gb": round(mem.used / 1024**3, 1),
                 "temp": temp,
+                "power": read_power_watts(),
             })
             yield f"data: {data}\n\n"
             await asyncio.sleep(5)
