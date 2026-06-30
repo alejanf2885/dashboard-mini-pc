@@ -1,170 +1,123 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Homelab Dashboard</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homelab Live</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
-<style>
-:root{
-  --bg:#0a0a0b;
-  --card:#141416;
-  --border:#242428;
-  --txt:#eaeaea;
-  --muted:#8a8a93;
-  --blue:#4d8dff;
-  --green:#3ecf8e;
-  --orange:#f0a838;
-  --red:#e05555;
-}
+  <style>
+    body {
+      background: #0a0a0b;
+      color: #eaeaea;
+      font-family: system-ui, sans-serif;
+      margin: 0;
+    }
 
-body{
-  margin:0;
-  font-family:Inter,system-ui;
-  background:var(--bg);
-  color:var(--txt);
-}
+    .wrap { max-width: 1100px; margin: auto; padding: 20px; }
 
-.wrap{max-width:1200px;margin:auto;padding:20px}
+    .grid { display: grid; gap: 12px; }
+    .grid-5 { grid-template-columns: repeat(5, 1fr); }
 
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:20px;
-}
+    .card {
+      background: #141418;
+      border: 1px solid #24242a;
+      border-radius: 12px;
+      padding: 14px;
+    }
 
-.status{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  font-size:12px;
-  color:var(--muted);
-}
+    .label { font-size: 11px; opacity: 0.6; }
+    .value { font-size: 26px; font-weight: 600; }
 
-.dot{
-  width:8px;height:8px;border-radius:50%;
-  background:var(--green);
-  animation:pulse 2s infinite;
-}
+    .bar {
+      height: 5px;
+      background: #2a2a33;
+      border-radius: 4px;
+      margin-top: 10px;
+      overflow: hidden;
+    }
 
-@keyframes pulse{
-  0%{transform:scale(1);opacity:.6}
-  70%{transform:scale(2);opacity:0}
-}
+    .fill {
+      height: 100%;
+      width: 0%;
+      transition: width .3s ease;
+    }
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:12px;
-}
+    .cpu { background: #4d8dff; }
+    .ram { background: #3ecf8e; }
+    .temp { background: #f0a838; }
+    .power { background: #a87cff; }
 
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:12px;
-  padding:14px;
-}
+    .status {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
 
-.label{font-size:11px;color:var(--muted)}
-.value{font-size:26px;font-weight:600;margin-top:6px}
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #3ecf8e;
+      box-shadow: 0 0 10px #3ecf8e;
+    }
 
-.bar{
-  height:4px;background:#222;border-radius:4px;margin-top:10px;overflow:hidden
-}
-.bar > div{height:100%;width:0%;transition:.3s}
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+    }
 
-.cpu{background:var(--blue)}
-.ram{background:var(--green)}
-.disk{background:#888}
-.temp{background:var(--orange)}
-.power{background:#a87cff}
-
-.layout{
-  display:grid;
-  grid-template-columns:2fr 1fr;
-  gap:12px;
-  margin-top:12px;
-}
-
-.events{
-  font-size:12px;
-  max-height:320px;
-  overflow:auto;
-}
-
-.event{
-  padding:8px 0;
-  border-bottom:1px solid #222;
-}
-
-.event.warning{color:var(--orange)}
-.event.error{color:var(--red)}
-.event.info{color:var(--green)}
-
-canvas{width:100%!important;height:260px!important}
-</style>
+    .sub {
+      font-size: 12px;
+      opacity: 0.6;
+    }
+  </style>
 </head>
 
 <body>
-
 <div class="wrap">
 
-  <div class="header">
-    <div>🖥️ Homelab</div>
-
-    <div class="status">
-      <div class="dot" id="dot"></div>
-      <span id="status">conectando</span>
+  <!-- HEADER -->
+  <div class="status">
+    <div class="dot"></div>
+    <div>
+      <div class="title">Homelab Live Dashboard</div>
+      <div class="sub" id="statusText">conectando...</div>
     </div>
   </div>
 
-  <div class="grid">
+  <!-- METRICS -->
+  <div class="grid grid-5">
 
     <div class="card">
       <div class="label">CPU</div>
-      <div class="value" id="cpu">—</div>
-      <div class="bar"><div class="cpu" id="cpuBar"></div></div>
+      <div class="value"><span id="cpu">--</span>%</div>
+      <div class="bar"><div id="cpuBar" class="fill cpu"></div></div>
     </div>
 
     <div class="card">
       <div class="label">RAM</div>
-      <div class="value" id="ram">—</div>
-      <div class="bar"><div class="ram" id="ramBar"></div></div>
-    </div>
-
-    <div class="card">
-      <div class="label">DISK</div>
-      <div class="value" id="disk">—</div>
-      <div class="bar"><div class="disk" id="diskBar"></div></div>
+      <div class="value"><span id="ram">--</span> GB</div>
+      <div class="bar"><div id="ramBar" class="fill ram"></div></div>
     </div>
 
     <div class="card">
       <div class="label">TEMP</div>
-      <div class="value" id="temp">—</div>
-      <div class="bar"><div class="temp" id="tempBar"></div></div>
+      <div class="value"><span id="temp">--</span>°C</div>
+      <div class="bar"><div id="tempBar" class="fill temp"></div></div>
     </div>
 
     <div class="card">
       <div class="label">POWER</div>
-      <div class="value" id="power">—</div>
-      <div class="bar"><div class="power" id="powerBar"></div></div>
-    </div>
-
-  </div>
-
-  <div class="layout">
-
-    <div class="card">
-      <div class="label">Live Metrics</div>
-      <canvas id="chart"></canvas>
+      <div class="value"><span id="power">--</span> W</div>
+      <div class="bar"><div id="powerBar" class="fill power"></div></div>
     </div>
 
     <div class="card">
-      <div class="label">Events</div>
-      <div class="events" id="events"></div>
+      <div class="label">STATUS</div>
+      <div class="value" style="font-size:16px" id="liveStatus">WAIT</div>
     </div>
 
   </div>
@@ -172,110 +125,43 @@ canvas{width:100%!important;height:260px!important}
 </div>
 
 <script>
-const MAX = 50;
+const protocol = location.protocol === "https:" ? "wss" : "ws";
+const ws = new WebSocket(`${protocol}://${location.host}/ws`);
 
-const ctx = document.getElementById("chart");
+ws.onopen = () => {
+  document.getElementById("statusText").textContent = "conectado en tiempo real";
+};
 
-const chart = new Chart(ctx, {
-  type:"line",
-  data:{
-    labels:[],
-    datasets:[
-      {label:"CPU",data:[],borderColor:"#4d8dff",tension:.35},
-      {label:"RAM",data:[],borderColor:"#3ecf8e",tension:.35}
-    ]
-  },
-  options:{
-    animation:false,
-    responsive:true,
-    scales:{y:{min:0,max:100}}
-  }
-});
+ws.onmessage = (event) => {
+  const d = JSON.parse(event.data);
 
-function push(t,cpu,ram){
-  chart.data.labels.push(t);
-  chart.data.datasets[0].data.push(cpu);
-  chart.data.datasets[1].data.push(ram);
+  // CPU
+  document.getElementById("cpu").textContent = d.cpu ?? "--";
+  document.getElementById("cpuBar").style.width = (d.cpu ?? 0) + "%";
 
-  if(chart.data.labels.length>MAX){
-    chart.data.labels.shift();
-    chart.data.datasets.forEach(d=>d.data.shift());
+  // RAM
+  document.getElementById("ram").textContent = d.ram_used_gb ?? "--";
+  document.getElementById("ramBar").style.width = (d.ram_pct ?? 0) + "%";
+
+  // TEMP
+  if (d.temp != null) {
+    document.getElementById("temp").textContent = d.temp.toFixed(1);
+    document.getElementById("tempBar").style.width = Math.min(d.temp, 100) + "%";
   }
 
-  chart.update("none");
-}
+  // POWER
+  if (d.power != null) {
+    document.getElementById("power").textContent = d.power;
+    document.getElementById("powerBar").style.width = Math.min(d.power / 60 * 100, 100) + "%";
+  }
 
-function eventType(msg){
-  if(msg.includes("CPU")) return "warning";
-  if(msg.includes("RAM")) return "warning";
-  if(msg.includes("Temp")) return "error";
-  return "info";
-}
+  document.getElementById("liveStatus").textContent = "LIVE";
+};
 
-function addEvent(msg){
-  const el=document.getElementById("events");
-  const div=document.createElement("div");
-  div.className="event "+eventType(msg);
-  div.textContent=msg;
-  el.prepend(div);
-
-  if(el.children.length>15) el.removeChild(el.lastChild);
-}
-
-// ---------------- WS ROBUSTO ----------------
-
-let ws;
-let retry=1000;
-
-function connect(){
-
-  ws = new WebSocket("ws://"+location.host+"/ws");
-
-  ws.onopen=()=>{
-    retry=1000;
-    document.getElementById("status").textContent="online";
-    document.getElementById("dot").style.background="#3ecf8e";
-  };
-
-  ws.onclose=()=>{
-    document.getElementById("status").textContent="reconectando...";
-    document.getElementById("dot").style.background="#f0a838";
-
-    setTimeout(connect, retry);
-    retry = Math.min(retry*1.5, 10000);
-  };
-
-  ws.onerror=()=>{
-    ws.close();
-  };
-
-  ws.onmessage=(e)=>{
-    const d=JSON.parse(e.data);
-    const t=new Date(d.ts*1000).toLocaleTimeString();
-
-    // valores
-    cpu.textContent=d.cpu+"%";
-    ram.textContent=d.ram+"%";
-    disk.textContent=d.disk+"%";
-    temp.textContent=d.temp??"—";
-    power.textContent=d.power??"—";
-
-    // barras
-    cpuBar.style.width=d.cpu+"%";
-    ramBar.style.width=d.ram+"%";
-    diskBar.style.width=d.disk+"%";
-    tempBar.style.width=(d.temp||0)+"%";
-    powerBar.style.width=Math.min((d.power||0)*2,100)+"%";
-
-    push(t,d.cpu,d.ram);
-
-    if(d.alerts){
-      d.alerts.forEach(addEvent);
-    }
-  };
-}
-
-connect();
+ws.onclose = () => {
+  document.getElementById("statusText").textContent = "desconectado";
+  document.getElementById("liveStatus").textContent = "OFF";
+};
 </script>
 
 </body>
