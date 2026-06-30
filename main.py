@@ -38,6 +38,7 @@ DEFAULT_SETTINGS: dict = {
     "adguard_url": "",
     "adguard_user": "",
     "adguard_password": "",
+    "electricity_price": 0.15,  # €/kWh
 }
 
 # ── Alert state (per metric) ─────────────────────────
@@ -574,9 +575,15 @@ async def init_db():
                 ts REAL PRIMARY KEY,
                 cpu REAL, ram_pct REAL, temp REAL, load1 REAL,
                 net_down_kbps REAL, disk_pct REAL,
-                disk_read_mbps REAL, disk_write_mbps REAL
+                disk_read_mbps REAL, disk_write_mbps REAL,
+                power_w REAL
             )
         """)
+        # Add column if upgrading from older schema
+        try:
+            await db.execute("ALTER TABLE metrics ADD COLUMN power_w REAL")
+        except Exception:
+            pass
         await db.commit()
 
 
@@ -586,11 +593,12 @@ async def store_metrics(payload: dict):
         la = payload.get("load_avg") or [None]
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
-                "INSERT OR REPLACE INTO metrics VALUES (?,?,?,?,?,?,?,?,?)",
+                "INSERT OR REPLACE INTO metrics VALUES (?,?,?,?,?,?,?,?,?,?)",
                 (payload.get("ts"), payload.get("cpu"), payload.get("ram_pct"),
                  payload.get("temp"), la[0],
                  (payload.get("net") or {}).get("down_kbps"),
-                 payload.get("disk_pct"), io.get("read_mbps"), io.get("write_mbps")),
+                 payload.get("disk_pct"), io.get("read_mbps"), io.get("write_mbps"),
+                 payload.get("power")),
             )
             await db.execute("DELETE FROM metrics WHERE ts < ?", (time.time() - 86400,))
             await db.commit()
@@ -715,6 +723,7 @@ async def get_history(metric: str = "cpu", hours: float = 1.0):
         "cpu": "cpu", "ram": "ram_pct", "temp": "temp", "load": "load1",
         "net_down": "net_down_kbps", "disk": "disk_pct",
         "disk_read": "disk_read_mbps", "disk_write": "disk_write_mbps",
+        "power": "power_w",
     }
     col = col_map.get(metric, "cpu")
     since = time.time() - hours * 3600
@@ -869,6 +878,7 @@ async def ws_endpoint(ws: WebSocket):
                 "ram_available_gb": round(mem.available / 1024**3, 1),
                 "temp": temp,
                 "power": read_power(),
+                "electricity_price": settings.get("electricity_price", 0.15),
                 "disk_pct": disk_pct,
                 "disk_used_gb": disk_used_gb,
                 "disk_io": read_disk_io(),

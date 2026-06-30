@@ -170,9 +170,11 @@
         </svg>
         <span id="uptimeText">--</span>
       </span>
-      <span id="powerBadge" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full"
-            style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:#a78bfa">
+      <span id="powerBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full cursor-pointer"
+            style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:#a78bfa"
+            onclick="openHistory('power','Potencia W','#a78bfa')" title="Ver historial de potencia">
         ⚡ <span id="powerVal">-- W</span>
+        <span id="powerCost" class="text-[10px] opacity-60">· -- €/mes</span>
       </span>
       <span id="lastUpdateBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
             style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
@@ -339,8 +341,35 @@
     </div>
   </section>
 
-  <!-- ROW 3: PING + ADGUARD -->
-  <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+  <!-- ROW 3: ENERGY + PING + ADGUARD -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <!-- Energy / Cost -->
+    <div class="card animate-fade-in" id="powerCard" style="animation-delay:.38s">
+      <div class="flex items-center justify-between mb-4">
+        <span class="card-label">Energía</span>
+        <span class="text-[10px] text-white/25" id="powerPriceLabel">0.15 €/kWh</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mb-4">
+        <div style="background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.15);border-radius:10px;padding:12px">
+          <div class="text-2xl font-bold" style="color:#a78bfa" id="powerWatts">-- W</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Ahora</div>
+        </div>
+        <div style="background:rgba(167,139,250,.04);border:1px solid rgba(167,139,250,.1);border-radius:10px;padding:12px">
+          <div class="text-2xl font-bold text-white/60" id="powerKwhDay">-- kWh</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Por día</div>
+        </div>
+        <div style="background:rgba(234,179,8,.05);border:1px solid rgba(234,179,8,.15);border-radius:10px;padding:12px">
+          <div class="text-2xl font-bold text-yellow-400" id="powerCostMonth">-- €</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Este mes (est.)</div>
+        </div>
+        <div style="background:rgba(234,179,8,.03);border:1px solid rgba(234,179,8,.1);border-radius:10px;padding:12px">
+          <div class="text-2xl font-bold text-white/50" id="powerCostYear">-- €</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Al año (est.)</div>
+        </div>
+      </div>
+      <canvas class="sparkline" id="powerSpark" onclick="openHistory('power','Potencia W','#a78bfa')"></canvas>
+    </div>
 
     <!-- Ping / Latency -->
     <div class="card animate-fade-in" style="animation-delay:.4s">
@@ -569,6 +598,18 @@
       <p class="text-[11px] text-white/30 mt-1">Un host por línea</p>
     </div>
 
+    <!-- Electricity -->
+    <div class="setting-section">
+      <p class="card-label mb-3">Coste energético</p>
+      <div class="setting-row">
+        <span class="setting-label">Precio kWh</span>
+        <div class="flex items-center gap-2 flex-1">
+          <input class="input input-sm" id="sElecPrice" type="number" step="0.01" placeholder="0.15" style="width:80px">
+          <span class="text-[11px] text-white/30">€/kWh · tarifa de tu factura</span>
+        </div>
+      </div>
+    </div>
+
     <!-- AdGuard -->
     <div class="setting-section">
       <p class="card-label mb-3">AdGuard Home</p>
@@ -621,7 +662,7 @@ const MAX_HIST = 60;
 const EMOJIS = ["🌐","🖥️","🎬","📦","🏠","📊","🔒","💾","📁","⚙️","🎮","📷","🔧","📝","🗄️","🐳","📡","🎵","📧","🛡️"];
 const COLORS = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#ef4444","#f97316","#84cc16","#14b8a6"];
 
-const history = { cpu:[], ram:[], temp:[], load:[], netDown:[], diskRead:[] };
+const history = { cpu:[], ram:[], temp:[], load:[], netDown:[], diskRead:[], power:[] };
 const peaks   = { cpu:0, temp:0 };
 let sysInfo    = null, ws = null, retries = 0, links = [], procSort = "cpu";
 let currentInterval = 2, lastMsgTs = null;
@@ -712,10 +753,26 @@ function handleMetrics(d) {
   if (d.swap_used_gb != null && sysInfo?.swap_total_gb)
     document.getElementById("swapText").textContent = `Swap: ${d.swap_used_gb} / ${sysInfo.swap_total_gb} GB`;
 
-  // Power
+  // Power + cost
   if (d.power != null) {
+    const price = d.electricity_price ?? 0.15;
+    const w = d.power;
+    const kwhDay   = (w * 24 / 1000);
+    const costMonth = (w * 24 * 30 / 1000 * price);
+    const costYear  = (w * 24 * 365 / 1000 * price);
+
     document.getElementById("powerBadge").style.display = "";
-    document.getElementById("powerVal").textContent = d.power + " W";
+    document.getElementById("powerVal").textContent     = w + " W";
+    document.getElementById("powerCost").textContent    = "· " + costMonth.toFixed(2) + " €/mes";
+
+    document.getElementById("powerWatts").textContent    = w + " W";
+    document.getElementById("powerKwhDay").textContent   = kwhDay.toFixed(2) + " kWh";
+    document.getElementById("powerCostMonth").textContent = costMonth.toFixed(2) + " €";
+    document.getElementById("powerCostYear").textContent  = costYear.toFixed(0) + " €";
+    document.getElementById("powerPriceLabel").textContent = price + " €/kWh";
+
+    pushH("power", w);
+    drawSpark("powerSpark", history.power, "#a78bfa", null);
   }
 
   // Peaks
@@ -1112,6 +1169,7 @@ async function openSettings() {
     document.getElementById("sAlDiskDur").value  = s.alerts?.disk?.duration_s || 300;
     document.getElementById("sAlCooldown").value = s.cooldown_minutes || 30;
     document.getElementById("sPingHosts").value  = (s.ping_hosts || []).join("\n");
+    document.getElementById("sElecPrice").value  = s.electricity_price ?? 0.15;
     document.getElementById("sAgUrl").value      = s.adguard_url  || "";
     document.getElementById("sAgUser").value     = s.adguard_user || "";
     document.getElementById("sAgPass").value     = "";
@@ -1129,6 +1187,7 @@ async function saveSettings() {
     telegram_chat_id: document.getElementById("sTgChat").value.trim(),
     cooldown_minutes: parseInt(document.getElementById("sAlCooldown").value) || 30,
     ping_hosts: document.getElementById("sPingHosts").value.split("\n").map(h=>h.trim()).filter(Boolean),
+    electricity_price: parseFloat(document.getElementById("sElecPrice").value) || 0.15,
     adguard_url:  document.getElementById("sAgUrl").value.trim(),
     adguard_user: document.getElementById("sAgUser").value.trim(),
     alerts: {
