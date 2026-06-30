@@ -111,32 +111,57 @@ def read_network():
 _net_iface_state: dict = {}
 
 
-def read_net_per_iface():
+def _parse_proc_net_dev():
+    """Parse /proc/1/net/dev (host namespace when pid:host is active)."""
+    ifaces = {}
     try:
-        counters = psutil.net_io_counters(pernic=True)
-        now = time.time()
-        result = []
-        for iface, c in counters.items():
-            if iface == "lo":
-                continue
-            prev = _net_iface_state.get(iface)
-            up_kbps, down_kbps = 0.0, 0.0
-            if prev and prev["ts"]:
-                dt = now - prev["ts"]
-                if dt > 0:
-                    up_kbps = round((c.bytes_sent - prev["sent"]) / 1024 / dt, 1)
-                    down_kbps = round((c.bytes_recv - prev["recv"]) / 1024 / dt, 1)
-            _net_iface_state[iface] = {"sent": c.bytes_sent, "recv": c.bytes_recv, "ts": now}
-            result.append({
-                "iface": iface,
-                "up_kbps": up_kbps,
-                "down_kbps": down_kbps,
-                "total_sent_gb": round(c.bytes_sent / 1024**3, 2),
-                "total_recv_gb": round(c.bytes_recv / 1024**3, 2),
-            })
-        return result
+        with open("/proc/1/net/dev") as f:
+            for line in f.readlines()[2:]:
+                parts = line.split()
+                if len(parts) < 10:
+                    continue
+                name = parts[0].rstrip(":")
+                if name == "lo":
+                    continue
+                ifaces[name] = {"recv": int(parts[1]), "sent": int(parts[9])}
     except Exception:
-        return []
+        pass
+    return ifaces
+
+
+def read_net_per_iface():
+    now = time.time()
+    raw = _parse_proc_net_dev()
+    if not raw:
+        # fallback: psutil (container interfaces only)
+        try:
+            raw = {
+                k: {"sent": v.bytes_sent, "recv": v.bytes_recv}
+                for k, v in psutil.net_io_counters(pernic=True).items()
+                if k != "lo"
+            }
+        except Exception:
+            return []
+
+    result = []
+    for iface, counters in raw.items():
+        sent, recv = counters["sent"], counters["recv"]
+        prev = _net_iface_state.get(iface)
+        up_kbps, down_kbps = 0.0, 0.0
+        if prev and prev["ts"]:
+            dt = now - prev["ts"]
+            if dt > 0:
+                up_kbps = round((sent - prev["sent"]) / 1024 / dt, 1)
+                down_kbps = round((recv - prev["recv"]) / 1024 / dt, 1)
+        _net_iface_state[iface] = {"sent": sent, "recv": recv, "ts": now}
+        result.append({
+            "iface": iface,
+            "up_kbps": max(up_kbps, 0),
+            "down_kbps": max(down_kbps, 0),
+            "total_sent_gb": round(sent / 1024**3, 2),
+            "total_recv_gb": round(recv / 1024**3, 2),
+        })
+    return result
 
 
 # ── Disk I/O ─────────────────────────────────────────
