@@ -24,342 +24,404 @@
     .gauge-track { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 7; }
     .gauge-fill  { fill: none; stroke-width: 7; stroke-linecap: round;
                    stroke-dasharray: var(--circ); stroke-dashoffset: var(--circ);
-                   transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1); }
+                   transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .4s ease; }
 
-    .sparkline { width: 100%; height: 40px; display: block; border-radius: 6px; }
+    .sparkline { width: 100%; height: 40px; display: block; border-radius: 6px; cursor: pointer; }
+    .sparkline:hover { opacity: .85; }
 
-    @keyframes pulse-dot { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.5; transform:scale(.85); } }
-    @keyframes fade-in   { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes spin      { to { transform: rotate(360deg); } }
+    @keyframes pulse-dot  { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.5; transform:scale(.85); } }
+    @keyframes fade-in    { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes spin       { to { transform: rotate(360deg); } }
+    @keyframes alert-glow { 0%,100%{ box-shadow:0 0 0 rgba(239,68,68,0); } 50%{ box-shadow:0 0 24px rgba(239,68,68,.35); } }
+    @keyframes warn-glow  { 0%,100%{ box-shadow:0 0 0 rgba(249,115,22,0); } 50%{ box-shadow:0 0 18px rgba(249,115,22,.3); } }
+
     .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
     .animate-fade-in   { animation: fade-in .5s ease-out both; }
+    .alert-glow        { animation: alert-glow 2s ease-in-out infinite; }
+    .warn-glow         { animation: warn-glow 2s ease-in-out infinite; }
 
     .card {
       background: var(--card); border: 1px solid var(--border);
       border-radius: 16px; padding: 20px; backdrop-filter: blur(12px);
       transition: border-color .3s ease, box-shadow .3s ease;
     }
-    .card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+    .card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
 
-    .core-bar-bg  { height: 8px; background: rgba(255,255,255,0.06); border-radius: 4px; overflow: hidden; }
-    .core-bar-fill { height: 100%; border-radius: 4px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+    .card-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: rgba(255,255,255,.45); text-transform: uppercase; }
+
+    .bar-bg   { height: 8px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 4px; transition: width .6s cubic-bezier(.4,0,.2,1); }
 
     .overlay { position: fixed; inset: 0; background: rgba(7,7,14,.92); backdrop-filter: blur(8px);
                display: none; place-items: center; z-index: 50; }
     .overlay.show { display: grid; }
 
-    /* Modal */
     .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
                 display: none; place-items: center; z-index: 60; }
     .modal-bg.show { display: grid; }
     .modal-card { background: #12121a; border: 1px solid var(--border); border-radius: 16px;
                   padding: 24px; width: 100%; max-width: 420px; margin: 16px; }
+
     .input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-             background: rgba(255,255,255,0.04); color: white; font-size: 13px; outline: none;
+             background: rgba(255,255,255,.04); color: white; font-size: 13px; outline: none;
              transition: border-color .2s; }
-    .input:focus { border-color: rgba(255,255,255,0.2); }
-    .input::placeholder { color: rgba(255,255,255,0.25); }
+    .input:focus { border-color: rgba(255,255,255,.2); }
+    .input::placeholder { color: rgba(255,255,255,.25); }
+
     .btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
            border: none; transition: all .2s; }
     .btn-primary { background: #3b82f6; color: white; }
     .btn-primary:hover { background: #2563eb; }
-    .btn-ghost { background: transparent; color: rgba(255,255,255,0.5); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: rgba(255,255,255,0.05); color: white; }
-    .btn-danger { background: transparent; color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
-    .btn-danger:hover { background: rgba(239,68,68,0.1); }
+    .btn-ghost { background: transparent; color: rgba(255,255,255,.5); border: 1px solid var(--border); }
+    .btn-ghost:hover { background: rgba(255,255,255,.05); color: white; }
+    .btn-danger { background: transparent; color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
+    .btn-danger:hover { background: rgba(239,68,68,.1); }
+    .btn-active { background: rgba(255,255,255,.1) !important; color: white !important; }
 
-    /* Emoji picker */
     .emoji-opt { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
                  border-radius: 8px; cursor: pointer; font-size: 18px; border: 2px solid transparent;
-                 transition: all .15s; background: rgba(255,255,255,0.03); }
-    .emoji-opt:hover { background: rgba(255,255,255,0.08); }
-    .emoji-opt.selected { border-color: #3b82f6; background: rgba(59,130,246,0.15); }
+                 transition: all .15s; background: rgba(255,255,255,.03); }
+    .emoji-opt:hover { background: rgba(255,255,255,.08); }
+    .emoji-opt.selected { border-color: #3b82f6; background: rgba(59,130,246,.15); }
 
-    /* Color picker */
     .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
                  border: 2px solid transparent; transition: all .15s; }
     .color-dot:hover { transform: scale(1.15); }
-    .color-dot.selected { border-color: white; box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+    .color-dot.selected { border-color: white; box-shadow: 0 0 8px rgba(255,255,255,.3); }
 
-    /* Service card */
     .svc-card { position: relative; padding: 14px; border-radius: 12px;
-                background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+                background: rgba(255,255,255,.03); border: 1px solid var(--border);
                 cursor: pointer; transition: all .2s; text-decoration: none; display: block; }
-    .svc-card:hover { border-color: rgba(255,255,255,0.12); background: rgba(255,255,255,0.05);
-                      transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,0.3); }
+    .svc-card:hover { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.05);
+                      transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
     .svc-actions { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; }
     .svc-card:hover .svc-actions { display: flex; }
     .svc-action { width: 24px; height: 24px; border-radius: 6px; border: none; cursor: pointer;
                   font-size: 11px; display: flex; align-items: center; justify-content: center;
-                  background: rgba(255,255,255,0.08); transition: background .15s; }
-    .svc-action:hover { background: rgba(255,255,255,0.15); }
+                  background: rgba(255,255,255,.08); transition: background .15s; }
+    .svc-action:hover { background: rgba(255,255,255,.15); }
 
-    /* Process table */
-    .proc-row { display: flex; align-items: center; padding: 6px 0;
-                border-bottom: 1px solid rgba(255,255,255,0.03); }
+    .proc-row { display: flex; align-items: center; gap: 4px; padding: 5px 0;
+                border-bottom: 1px solid rgba(255,255,255,.03); }
     .proc-row:last-child { border-bottom: none; }
+    .proc-minibar { height: 3px; border-radius: 2px; transition: width .4s ease; }
 
-    ::-webkit-scrollbar { width: 6px; } ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+    .disk-row { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
+    .disk-row:last-child { border-bottom: none; }
+
+    .iface-row { display: flex; align-items: center; justify-content: space-between;
+                 padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.03); font-size: 12px; }
+    .iface-row:last-child { border-bottom: none; }
+
+    .docker-item { display: flex; align-items: center; gap: 10px; padding: 7px 0;
+                   border-bottom: 1px solid rgba(255,255,255,.03); }
+    .docker-item:last-child { border-bottom: none; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    /* History modal */
+    .hist-modal-card { background: #12121a; border: 1px solid var(--border); border-radius: 16px;
+                       padding: 24px; width: 100%; max-width: 680px; margin: 16px; }
+    .hist-tab { padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
+                border: 1px solid var(--border); background: transparent; color: rgba(255,255,255,.4);
+                transition: all .15s; }
+    .hist-tab:hover { background: rgba(255,255,255,.05); color: white; }
+    .hist-tab.active { background: rgba(255,255,255,.1); color: white; border-color: rgba(255,255,255,.2); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
   </style>
 </head>
 
 <body class="min-h-screen antialiased">
 
-  <!-- ═══════════ HEADER ═══════════ -->
-  <header style="background:rgba(7,7,14,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);"
-          class="sticky top-0 z-40 px-4 sm:px-6 py-3">
-    <div class="max-w-7xl mx-auto flex items-center justify-between">
-      <div class="flex items-center gap-3">
-        <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse-dot"></div>
-        <div>
-          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Homelab Dashboard</h1>
-          <p id="statusText" class="text-[11px] text-white/40 leading-none mt-0.5">conectando…</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3 text-xs text-white/50">
-        <span id="procBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-              style="background:rgba(255,255,255,0.04);border:1px solid var(--border);">
-          <span id="procCount">--</span> procs
-        </span>
-        <span id="uptimeBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-              style="background:rgba(255,255,255,0.04);border:1px solid var(--border);">
-          <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <span id="uptimeText">--</span>
-        </span>
-        <span class="px-2.5 py-1 rounded-full" style="background:rgba(255,255,255,0.04);border:1px solid var(--border);">⟳ 2s</span>
+<!-- ═══════════ HEADER ═══════════ -->
+<header style="background:rgba(7,7,14,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);"
+        class="sticky top-0 z-40 px-4 sm:px-6 py-3">
+  <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+    <div class="flex items-center gap-3">
+      <div id="statusDot" class="w-2.5 h-2.5 rounded-full bg-yellow-400 animate-pulse-dot"></div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Homelab Dashboard</h1>
+        <p id="statusText" class="text-[11px] text-white/40 leading-none mt-0.5">conectando…</p>
       </div>
     </div>
-  </header>
-
-  <!-- ═══════════ MAIN ═══════════ -->
-  <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
-
-    <!-- ── ROW 1: GAUGE CARDS ── -->
-    <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-
-      <!-- CPU -->
-      <div class="card animate-fade-in" style="animation-delay:.05s">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">CPU</span>
-          <span id="cpuPeak" class="text-[10px] text-white/30">peak --</span>
-        </div>
-        <div class="flex justify-center">
-          <svg viewBox="0 0 120 120" class="w-28 h-28">
-            <circle cx="60" cy="60" r="52" class="gauge-track"/>
-            <circle cx="60" cy="60" r="52" class="gauge-fill" id="cpuGauge"
-                    stroke="var(--cpu)" transform="rotate(-90 60 60)"/>
-            <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="cpuVal">--</text>
-            <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10">%</text>
-          </svg>
-        </div>
-        <canvas class="sparkline mt-3" id="cpuSpark"></canvas>
-      </div>
-
-      <!-- RAM -->
-      <div class="card animate-fade-in" style="animation-delay:.1s">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">RAM</span>
-          <span id="ramInfo" class="text-[10px] text-white/30">-- / -- GB</span>
-        </div>
-        <div class="flex justify-center">
-          <svg viewBox="0 0 120 120" class="w-28 h-28">
-            <circle cx="60" cy="60" r="52" class="gauge-track"/>
-            <circle cx="60" cy="60" r="52" class="gauge-fill" id="ramGauge"
-                    stroke="var(--ram)" transform="rotate(-90 60 60)"/>
-            <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="ramVal">--</text>
-            <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10">GB</text>
-          </svg>
-        </div>
-        <canvas class="sparkline mt-3" id="ramSpark"></canvas>
-        <p class="text-[10px] text-white/25 mt-1 text-center" id="swapText">Swap: --</p>
-      </div>
-
-      <!-- TEMP -->
-      <div class="card animate-fade-in" style="animation-delay:.15s">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">Temp</span>
-          <span id="tempPeak" class="text-[10px] text-white/30">peak --</span>
-        </div>
-        <div class="flex justify-center">
-          <svg viewBox="0 0 120 120" class="w-28 h-28">
-            <circle cx="60" cy="60" r="52" class="gauge-track"/>
-            <circle cx="60" cy="60" r="52" class="gauge-fill" id="tempGauge"
-                    stroke="var(--temp)" transform="rotate(-90 60 60)"/>
-            <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="tempVal">--</text>
-            <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10">°C</text>
-          </svg>
-        </div>
-        <canvas class="sparkline mt-3" id="tempSpark"></canvas>
-      </div>
-
-      <!-- LOAD AVERAGE -->
-      <div class="card animate-fade-in" style="animation-delay:.2s">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">Load</span>
-          <span id="loadSub" class="text-[10px] text-white/30">5m -- · 15m --</span>
-        </div>
-        <div class="flex justify-center">
-          <svg viewBox="0 0 120 120" class="w-28 h-28">
-            <circle cx="60" cy="60" r="52" class="gauge-track"/>
-            <circle cx="60" cy="60" r="52" class="gauge-fill" id="loadGauge"
-                    stroke="var(--load)" transform="rotate(-90 60 60)"/>
-            <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="loadVal">--</text>
-            <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,0.4)" font-size="10">avg</text>
-          </svg>
-        </div>
-        <canvas class="sparkline mt-3" id="loadSpark"></canvas>
-      </div>
-    </section>
-
-    <!-- ── ROW 2: DETAILS ── -->
-    <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
-
-      <!-- Per-core CPU -->
-      <div class="card animate-fade-in" style="animation-delay:.25s">
-        <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">CPU per Core</span>
-        <div id="coresContainer" class="mt-4 space-y-2.5"></div>
-      </div>
-
-      <!-- Disk -->
-      <div class="card animate-fade-in" style="animation-delay:.3s">
-        <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">Almacenamiento</span>
-        <div class="mt-4 flex items-center gap-4">
-          <svg viewBox="0 0 80 80" class="w-16 h-16 shrink-0">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="6"/>
-            <circle cx="40" cy="40" r="34" fill="none" stroke="var(--disk)" stroke-width="6"
-                    stroke-linecap="round" id="diskRing"
-                    stroke-dasharray="213.63" stroke-dashoffset="213.63"
-                    transform="rotate(-90 40 40)" style="transition:stroke-dashoffset .8s ease"/>
-            <text x="40" y="43" text-anchor="middle" fill="white" font-size="14" font-weight="700" id="diskPctText">--%</text>
-          </svg>
-          <div>
-            <p class="text-white/90 text-sm font-semibold" id="diskUsedText">-- / -- GB</p>
-            <p class="text-white/40 text-xs mt-0.5" id="diskFreeText">-- GB libres</p>
-          </div>
-        </div>
-        <div class="core-bar-bg mt-4">
-          <div class="core-bar-fill" id="diskBar" style="width:0%;background:var(--disk)"></div>
-        </div>
-      </div>
-
-      <!-- Network -->
-      <div class="card animate-fade-in" style="animation-delay:.35s">
-        <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">Red</span>
-        <div class="mt-4 space-y-3">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
-              <span class="text-xs text-white/50">Upload</span>
-            </div>
-            <span class="text-sm font-semibold text-white/90" id="netUp">0 KB/s</span>
-          </div>
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
-              <span class="text-xs text-white/50">Download</span>
-            </div>
-            <span class="text-sm font-semibold text-white/90" id="netDown">0 KB/s</span>
-          </div>
-          <div style="border-top:1px solid var(--border)" class="pt-3 mt-1">
-            <div class="flex justify-between text-[11px] text-white/30">
-              <span>↑ Total: <span id="netTotalUp">0</span> GB</span>
-              <span>↓ Total: <span id="netTotalDown">0</span> GB</span>
-            </div>
-          </div>
-        </div>
-        <canvas class="sparkline mt-3" id="netSpark"></canvas>
-      </div>
-    </section>
-
-    <!-- ── ROW 3: PROCESSES + SERVICES ── -->
-    <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-      <!-- Top Processes -->
-      <div class="card animate-fade-in" style="animation-delay:.4s">
-        <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">Top Procesos</span>
-        <div class="mt-3">
-          <div class="flex items-center text-[10px] text-white/30 uppercase tracking-wider pb-2 mb-1"
-               style="border-bottom:1px solid var(--border)">
-            <span class="flex-1">Proceso</span>
-            <span class="w-16 text-right">CPU</span>
-            <span class="w-16 text-right">RAM</span>
-          </div>
-          <div id="procsContainer">
-            <p class="text-xs text-white/20 py-4 text-center">Cargando…</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Services / Links -->
-      <div class="card animate-fade-in" style="animation-delay:.45s">
-        <div class="flex items-center justify-between mb-4">
-          <span class="text-xs font-semibold tracking-widest text-white/50 uppercase">Servicios</span>
-          <button onclick="openModal()" class="btn btn-ghost text-xs" style="padding:5px 12px;">+ Añadir</button>
-        </div>
-        <div id="linksGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          <p class="text-xs text-white/20 col-span-full text-center py-4">Sin servicios</p>
-        </div>
-      </div>
-    </section>
-
-    <!-- ── SYSTEM INFO BAR ── -->
-    <section class="card animate-fade-in flex flex-wrap gap-x-6 gap-y-2 items-center text-xs text-white/40 py-3 px-5"
-             style="animation-delay:.5s">
-      <span class="flex items-center gap-1.5">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
-        <span id="sysHostname" class="text-white/60 font-medium">--</span>
+    <div class="flex items-center gap-2 flex-wrap text-xs text-white/50">
+      <span id="procBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
+        <span id="procCount">--</span> procs
       </span>
-      <span id="sysPlatform">--</span>
-      <span id="sysCpu">--</span>
-      <span id="sysRam">--</span>
-      <span id="sysDisk">--</span>
-    </section>
-  </main>
-
-  <!-- ═══════════ RECONNECT OVERLAY ═══════════ -->
-  <div class="overlay" id="overlay">
-    <div class="text-center space-y-3">
-      <div class="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full mx-auto" style="animation:spin 1s linear infinite"></div>
-      <p class="text-white/60 text-sm">Reconectando...</p>
-      <p class="text-white/30 text-xs" id="retryText">Intento 1</p>
-    </div>
-  </div>
-
-  <!-- ═══════════ LINK MODAL ═══════════ -->
-  <div class="modal-bg" id="linkModal">
-    <div class="modal-card">
-      <h3 class="text-white font-semibold text-base mb-5" id="modalTitle">Añadir Servicio</h3>
-      <input type="hidden" id="editId">
-      <div class="space-y-4">
-        <div>
-          <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Nombre</label>
-          <input class="input" id="fName" placeholder="Ej: Jellyfin">
-        </div>
-        <div>
-          <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">URL</label>
-          <input class="input" id="fUrl" placeholder="http://192.168.1.100:8096">
-        </div>
-        <div>
-          <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Icono</label>
-          <div class="flex flex-wrap gap-2 mb-2" id="emojiPicker"></div>
-          <input class="input" id="fIcon" placeholder="Emoji personalizado" style="font-size:16px">
-        </div>
-        <div>
-          <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Color</label>
-          <div class="flex flex-wrap gap-2" id="colorPicker"></div>
-        </div>
-        <div>
-          <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Descripción <span class="text-white/20">(opcional)</span></label>
-          <input class="input" id="fDesc" placeholder="Media server">
-        </div>
-      </div>
-      <div class="flex gap-3 mt-6">
-        <button class="btn btn-primary flex-1" onclick="saveLink()">Guardar</button>
-        <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+      <span id="uptimeBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span id="uptimeText">--</span>
+      </span>
+      <span id="lastUpdateBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
+        <span id="lastUpdateText">--</span>
+      </span>
+      <!-- interval selector -->
+      <div class="flex gap-1">
+        <button class="hist-tab" id="itvBtn1" onclick="setIntervalSecs(1)">1s</button>
+        <button class="hist-tab active" id="itvBtn2" onclick="setIntervalSecs(2)">2s</button>
+        <button class="hist-tab" id="itvBtn5" onclick="setIntervalSecs(5)">5s</button>
       </div>
     </div>
   </div>
+</header>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
+
+  <!-- ── ROW 1: GAUGE CARDS ── -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+
+    <!-- CPU -->
+    <div class="card animate-fade-in" id="cpuCard" style="animation-delay:.05s">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">CPU</span>
+        <span id="cpuPeak" class="text-[10px] text-white/30">peak --</span>
+      </div>
+      <div class="flex justify-center">
+        <svg viewBox="0 0 120 120" class="w-28 h-28">
+          <circle cx="60" cy="60" r="52" class="gauge-track"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="cpuGauge"
+                  stroke="var(--cpu)" transform="rotate(-90 60 60)"/>
+          <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="cpuVal">--</text>
+          <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">%</text>
+        </svg>
+      </div>
+      <canvas class="sparkline mt-3" id="cpuSpark" onclick="openHistory('cpu','CPU %','#3b82f6')"></canvas>
+    </div>
+
+    <!-- RAM -->
+    <div class="card animate-fade-in" id="ramCard" style="animation-delay:.1s">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">RAM</span>
+        <span id="ramInfo" class="text-[10px] text-white/30">-- / -- GB</span>
+      </div>
+      <div class="flex justify-center">
+        <svg viewBox="0 0 120 120" class="w-28 h-28">
+          <circle cx="60" cy="60" r="52" class="gauge-track"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="ramGauge"
+                  stroke="var(--ram)" transform="rotate(-90 60 60)"/>
+          <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="ramVal">--</text>
+          <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">GB</text>
+        </svg>
+      </div>
+      <canvas class="sparkline mt-3" id="ramSpark" onclick="openHistory('ram','RAM %','#10b981')"></canvas>
+      <p class="text-[10px] text-white/25 mt-1 text-center" id="swapText">Swap: --</p>
+    </div>
+
+    <!-- TEMP -->
+    <div class="card animate-fade-in" id="tempCard" style="animation-delay:.15s">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">Temp</span>
+        <span id="tempPeak" class="text-[10px] text-white/30">peak --</span>
+      </div>
+      <div class="flex justify-center">
+        <svg viewBox="0 0 120 120" class="w-28 h-28">
+          <circle cx="60" cy="60" r="52" class="gauge-track"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="tempGauge"
+                  stroke="var(--temp)" transform="rotate(-90 60 60)"/>
+          <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="tempVal">--</text>
+          <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">°C</text>
+        </svg>
+      </div>
+      <canvas class="sparkline mt-3" id="tempSpark" onclick="openHistory('temp','Temp °C','#f59e0b')"></canvas>
+    </div>
+
+    <!-- LOAD AVERAGE -->
+    <div class="card animate-fade-in" style="animation-delay:.2s">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">Load</span>
+        <span id="loadSub" class="text-[10px] text-white/30">5m -- · 15m --</span>
+      </div>
+      <div class="flex justify-center">
+        <svg viewBox="0 0 120 120" class="w-28 h-28">
+          <circle cx="60" cy="60" r="52" class="gauge-track"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="loadGauge"
+                  stroke="var(--load)" transform="rotate(-90 60 60)"/>
+          <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="loadVal">--</text>
+          <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">avg</text>
+        </svg>
+      </div>
+      <canvas class="sparkline mt-3" id="loadSpark" onclick="openHistory('load','Load avg','#f97316')"></canvas>
+    </div>
+  </section>
+
+  <!-- ── ROW 2: DETAILS ── -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <!-- Per-core CPU + temps -->
+    <div class="card animate-fade-in" style="animation-delay:.25s">
+      <span class="card-label">CPU por Core</span>
+      <div id="coresContainer" class="mt-4 space-y-2"></div>
+    </div>
+
+    <!-- Disk: multiple partitions + I/O -->
+    <div class="card animate-fade-in" style="animation-delay:.3s">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">Almacenamiento</span>
+        <div id="diskIOBadge" class="flex gap-3 text-[11px] text-white/40">
+          <span>R: <span id="diskReadVal">--</span></span>
+          <span>W: <span id="diskWriteVal">--</span></span>
+        </div>
+      </div>
+      <div id="disksContainer" class="space-y-0"></div>
+      <canvas class="sparkline mt-3" id="diskReadSpark" onclick="openHistory('disk_read','Disk Read MB/s','#ec4899')" title="Disk Read"></canvas>
+    </div>
+
+    <!-- Network: total + per interface -->
+    <div class="card animate-fade-in" style="animation-delay:.35s">
+      <span class="card-label">Red</span>
+      <div class="mt-3 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            <span class="text-xs text-white/50">Upload</span>
+          </div>
+          <span class="text-sm font-semibold text-white/90" id="netUp">0 KB/s</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            <span class="text-xs text-white/50">Download</span>
+          </div>
+          <span class="text-sm font-semibold text-white/90" id="netDown">0 KB/s</span>
+        </div>
+      </div>
+      <!-- per-interface list -->
+      <div id="ifaceContainer" class="mt-3 pt-3" style="border-top:1px solid var(--border)"></div>
+      <canvas class="sparkline mt-3" id="netSpark" onclick="openHistory('net_down','Net Download KB/s','#06b6d4')"></canvas>
+      <div class="flex justify-between text-[11px] text-white/25 mt-1">
+        <span>↑ <span id="netTotalUp">0</span> GB</span>
+        <span>↓ <span id="netTotalDown">0</span> GB</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ROW 3: PROCESSES + DOCKER + SERVICES ── -->
+  <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+    <!-- Top Processes (improved) -->
+    <div class="card animate-fade-in" style="animation-delay:.4s">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">Top Procesos</span>
+        <div class="flex gap-1">
+          <button class="hist-tab active" id="sortCpuBtn" onclick="setProcSort('cpu')">CPU</button>
+          <button class="hist-tab" id="sortRamBtn" onclick="setProcSort('ram')">RAM</button>
+        </div>
+      </div>
+      <div class="flex items-center text-[10px] text-white/25 uppercase tracking-wider pb-1.5 mb-1"
+           style="border-bottom:1px solid var(--border)">
+        <span class="w-10 text-right pr-2 shrink-0">PID</span>
+        <span class="flex-1 pl-1">Proceso</span>
+        <span class="w-14 text-right">CPU</span>
+        <span class="w-14 text-right">RAM</span>
+      </div>
+      <div id="procsContainer">
+        <p class="text-xs text-white/20 py-4 text-center">Cargando…</p>
+      </div>
+      <p id="procHostWarning" class="hidden text-[10px] text-yellow-400/60 mt-2 text-center">
+        Solo procesos del contenedor · activa <code>--pid=host</code> en Coolify
+      </p>
+    </div>
+
+    <!-- Docker Containers -->
+    <div class="card animate-fade-in" style="animation-delay:.45s">
+      <span class="card-label">Docker</span>
+      <div id="dockerContainer" class="mt-3">
+        <p class="text-xs text-white/20 py-4 text-center" id="dockerEmpty">Montando socket…</p>
+      </div>
+    </div>
+
+    <!-- Services / Links -->
+    <div class="card animate-fade-in" style="animation-delay:.5s">
+      <div class="flex items-center justify-between mb-4">
+        <span class="card-label">Servicios</span>
+        <button onclick="openModal()" class="btn btn-ghost text-xs" style="padding:5px 12px;">+ Añadir</button>
+      </div>
+      <div id="linksGrid" class="grid grid-cols-2 gap-3">
+        <p class="text-xs text-white/20 col-span-full text-center py-4">Sin servicios</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SYSTEM INFO BAR ── -->
+  <section class="card animate-fade-in flex flex-wrap gap-x-6 gap-y-2 items-center text-xs text-white/40 py-3 px-5"
+           style="animation-delay:.55s">
+    <span class="flex items-center gap-1.5">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      <span id="sysHostname" class="text-white/60 font-medium">--</span>
+    </span>
+    <span id="sysPlatform">--</span>
+    <span id="sysCpu">--</span>
+    <span id="sysRam">--</span>
+    <span id="sysDisk">--</span>
+  </section>
+</main>
+
+<!-- ═══════════ RECONNECT OVERLAY ═══════════ -->
+<div class="overlay" id="overlay">
+  <div class="text-center space-y-3">
+    <div class="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full mx-auto" style="animation:spin 1s linear infinite"></div>
+    <p class="text-white/60 text-sm">Reconectando...</p>
+    <p class="text-white/30 text-xs" id="retryText">Intento 1</p>
+  </div>
+</div>
+
+<!-- ═══════════ LINK MODAL ═══════════ -->
+<div class="modal-bg" id="linkModal">
+  <div class="modal-card">
+    <h3 class="text-white font-semibold text-base mb-5" id="modalTitle">Añadir Servicio</h3>
+    <input type="hidden" id="editId">
+    <div class="space-y-4">
+      <div>
+        <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Nombre</label>
+        <input class="input" id="fName" placeholder="Ej: Jellyfin">
+      </div>
+      <div>
+        <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">URL</label>
+        <input class="input" id="fUrl" placeholder="http://192.168.1.100:8096">
+      </div>
+      <div>
+        <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Icono</label>
+        <div class="flex flex-wrap gap-2 mb-2" id="emojiPicker"></div>
+        <input class="input" id="fIcon" placeholder="Emoji personalizado" style="font-size:16px">
+      </div>
+      <div>
+        <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Color</label>
+        <div class="flex flex-wrap gap-2" id="colorPicker"></div>
+      </div>
+      <div>
+        <label class="text-[11px] text-white/40 uppercase tracking-wider mb-1.5 block">Descripción <span class="text-white/20">(opcional)</span></label>
+        <input class="input" id="fDesc" placeholder="Media server">
+      </div>
+    </div>
+    <div class="flex gap-3 mt-6">
+      <button class="btn btn-primary flex-1" onclick="saveLink()">Guardar</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ HISTORY MODAL ═══════════ -->
+<div class="modal-bg" id="histModal" onclick="if(event.target===this)closeHistory()">
+  <div class="hist-modal-card">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-white font-semibold text-base" id="histTitle">Historial</h3>
+      <button onclick="closeHistory()" class="btn btn-ghost" style="padding:5px 10px;font-size:12px;">✕</button>
+    </div>
+    <div class="flex gap-2 mb-4">
+      <button class="hist-tab active" id="h1btn"  onclick="loadHistory(1)">1h</button>
+      <button class="hist-tab"        id="h6btn"  onclick="loadHistory(6)">6h</button>
+      <button class="hist-tab"        id="h24btn" onclick="loadHistory(24)">24h</button>
+    </div>
+    <canvas id="histCanvas" style="width:100%;height:200px;display:block;border-radius:8px;"></canvas>
+    <p class="text-[11px] text-white/25 mt-2 text-center" id="histMeta">--</p>
+  </div>
+</div>
 
 <script>
 // ══════════════════════════════════════════════════════
@@ -372,14 +434,24 @@ const MAX_HISTORY = 60;
 const EMOJIS = ["🌐","🖥️","🎬","📦","🏠","📊","🔒","💾","📁","⚙️","🎮","📷","🔧","📝","🗄️","🐳","📡","🎵","📧","🛡️"];
 const COLORS = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#ef4444","#f97316","#84cc16","#14b8a6"];
 
-const history = { cpu:[], ram:[], temp:[], load:[], netDown:[] };
+const history = { cpu:[], ram:[], temp:[], load:[], netDown:[], diskRead:[] };
 const peaks   = { cpu:0, temp:0 };
-let sysInfo   = null;
-let ws        = null;
-let retries   = 0;
-let links     = [];
+let sysInfo    = null;
+let ws         = null;
+let retries    = 0;
+let links      = [];
+let procSort   = "cpu";
+let currentInterval = 2;
+let lastMsgTs  = null;
+
 let selectedEmoji = "🔗";
 let selectedColor = COLORS[0];
+
+// history modal state
+let histMetric = "cpu";
+let histLabel  = "CPU %";
+let histColor  = "#3b82f6";
+let histHours  = 1;
 
 // ══════════════════════════════════════════════════════
 // WEBSOCKET
@@ -393,6 +465,8 @@ function connect() {
     document.getElementById("overlay").classList.remove("show");
     document.getElementById("statusDot").className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse-dot";
     document.getElementById("statusText").textContent = "conectado en tiempo real";
+    // restore interval preference
+    if (currentInterval !== 2) ws.send(JSON.stringify({cmd:"set_interval", secs:currentInterval}));
   };
 
   ws.onmessage = (e) => {
@@ -414,6 +488,16 @@ function connect() {
   ws.onerror = () => ws.close();
 }
 
+function setIntervalSecs(n) {
+  currentInterval = n;
+  ["1","2","5"].forEach(v => {
+    document.getElementById(`itvBtn${v}`).classList.toggle("active", String(n) === v);
+  });
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify({cmd:"set_interval", secs:n}));
+  }
+}
+
 // ══════════════════════════════════════════════════════
 // HANDLERS
 // ══════════════════════════════════════════════════════
@@ -428,80 +512,97 @@ function handleInfo(d) {
 }
 
 function handleMetrics(d) {
-  // ── Gauges ──
-  updateGauge("cpuGauge", "cpuVal", d.cpu, 100);
-  updateGauge("ramGauge", "ramVal", d.ram_used_gb, sysInfo ? sysInfo.ram_total_gb : 16);
-  updateGauge("tempGauge", "tempVal", d.temp, 100);
+  lastMsgTs = Date.now();
+  document.getElementById("lastUpdateBadge").style.display = "";
 
-  // Load gauge: percentage based on core count
+  // ── Gauge colors (threshold-aware) ──
+  const cpuColor  = thresholdColor(d.cpu,  [[90,"#ef4444"],[80,"#f97316"]],"#3b82f6");
+  const ramColor  = thresholdColor(d.ram_pct, [[90,"#ef4444"],[80,"#f97316"]],"#10b981");
+  const tempColor = thresholdColor(d.temp, [[80,"#ef4444"],[70,"#f97316"]],"#f59e0b");
+
+  updateGauge("cpuGauge",  "cpuVal",  d.cpu,         100, cpuColor);
+  updateGauge("ramGauge",  "ramVal",  d.ram_used_gb, sysInfo ? sysInfo.ram_total_gb : 16, ramColor);
+  updateGauge("tempGauge", "tempVal", d.temp,        100, tempColor);
+
+  // card glow on alert
+  setCardAlert("cpuCard",  d.cpu,    90, 80);
+  setCardAlert("ramCard",  d.ram_pct, 90, 80);
+  setCardAlert("tempCard", d.temp,   80, 70);
+
+  // Load gauge
   const cpuCount = sysInfo ? sysInfo.cpu_count : 4;
   const load1 = d.load_avg ? d.load_avg[0] : null;
   if (load1 != null) {
     const loadPct = Math.min(load1 / cpuCount, 1);
     document.getElementById("loadGauge").style.strokeDashoffset = CIRC * (1 - loadPct);
     document.getElementById("loadVal").textContent = load1.toFixed(2);
-    document.getElementById("loadSub").textContent =
-      `5m ${d.load_avg[1]} · 15m ${d.load_avg[2]}`;
+    document.getElementById("loadSub").textContent = `5m ${d.load_avg[1]} · 15m ${d.load_avg[2]}`;
   }
 
-  // ── RAM info ──
   if (sysInfo) document.getElementById("ramInfo").textContent = `${d.ram_used_gb} / ${sysInfo.ram_total_gb} GB`;
 
-  // ── Swap ──
-  if (d.swap_used_gb != null && sysInfo && sysInfo.swap_total_gb != null) {
+  if (d.swap_used_gb != null && sysInfo && sysInfo.swap_total_gb != null)
     document.getElementById("swapText").textContent = `Swap: ${d.swap_used_gb} / ${sysInfo.swap_total_gb} GB`;
-  }
 
-  // ── Peaks ──
-  if (d.cpu != null && d.cpu > peaks.cpu) peaks.cpu = d.cpu;
+  // Peaks
+  if (d.cpu  != null && d.cpu  > peaks.cpu)  peaks.cpu  = d.cpu;
   if (d.temp != null && d.temp > peaks.temp) peaks.temp = d.temp;
   document.getElementById("cpuPeak").textContent  = `peak ${peaks.cpu}%`;
   document.getElementById("tempPeak").textContent = peaks.temp ? `peak ${peaks.temp}°C` : "peak --";
 
-  // ── History & Sparklines ──
-  pushHistory("cpu", d.cpu ?? 0);
-  pushHistory("ram", d.ram_pct ?? 0);
-  pushHistory("temp", d.temp ?? 0);
-  pushHistory("load", load1 ?? 0);
-  pushHistory("netDown", d.net ? d.net.down_kbps : 0);
+  // History & Sparklines
+  pushHistory("cpu",      d.cpu      ?? 0);
+  pushHistory("ram",      d.ram_pct  ?? 0);
+  pushHistory("temp",     d.temp     ?? 0);
+  pushHistory("load",     load1      ?? 0);
+  pushHistory("netDown",  d.net ? d.net.down_kbps : 0);
+  pushHistory("diskRead", d.disk_io  ? d.disk_io.read_mbps : 0);
 
-  drawSparkline("cpuSpark",  history.cpu,     "#3b82f6", 100);
-  drawSparkline("ramSpark",  history.ram,     "#10b981", 100);
-  drawSparkline("tempSpark", history.temp,    "#f59e0b", 100);
-  drawSparkline("loadSpark", history.load,    "#f97316", null);
-  drawSparkline("netSpark",  history.netDown, "#06b6d4", null);
+  drawSparkline("cpuSpark",      history.cpu,      cpuColor,   100);
+  drawSparkline("ramSpark",      history.ram,      ramColor,   100);
+  drawSparkline("tempSpark",     history.temp,     tempColor,  100);
+  drawSparkline("loadSpark",     history.load,     "#f97316",  null);
+  drawSparkline("netSpark",      history.netDown,  "#06b6d4",  null);
+  drawSparkline("diskReadSpark", history.diskRead, "#ec4899",  null);
 
-  // ── Per-core CPU ──
-  updateCores(d.cpu_per_core);
+  // Per-core CPU + temps
+  updateCores(d.cpu_per_core, d.cpu_temps);
 
-  // ── Disk ──
-  if (d.disk_pct != null) {
-    const diskOffset = DCIRC * (1 - d.disk_pct / 100);
-    document.getElementById("diskRing").style.strokeDashoffset = diskOffset;
-    document.getElementById("diskPctText").textContent = d.disk_pct + "%";
-    document.getElementById("diskBar").style.width = d.disk_pct + "%";
-    document.getElementById("diskUsedText").textContent =
-      `${d.disk_used_gb} / ${sysInfo ? sysInfo.disk_total_gb : "--"} GB`;
-    const free = sysInfo ? Math.round(sysInfo.disk_total_gb - d.disk_used_gb) : "--";
-    document.getElementById("diskFreeText").textContent = `${free} GB libres`;
+  // Disks
+  updateDisks(d.disks, d.disk_pct, d.disk_used_gb);
+
+  // Disk I/O
+  if (d.disk_io) {
+    document.getElementById("diskReadVal").textContent  = fmtMBps(d.disk_io.read_mbps);
+    document.getElementById("diskWriteVal").textContent = fmtMBps(d.disk_io.write_mbps);
   }
 
-  // ── Network ──
+  // Network
   if (d.net) {
-    document.getElementById("netUp").textContent   = fmtSpeed(d.net.up_kbps);
-    document.getElementById("netDown").textContent  = fmtSpeed(d.net.down_kbps);
+    document.getElementById("netUp").textContent        = fmtSpeed(d.net.up_kbps);
+    document.getElementById("netDown").textContent      = fmtSpeed(d.net.down_kbps);
     document.getElementById("netTotalUp").textContent   = d.net.total_sent_gb;
     document.getElementById("netTotalDown").textContent = d.net.total_recv_gb;
   }
+  updateNetIfaces(d.net_ifaces);
 
-  // ── Processes ──
+  // Processes
   if (d.proc_count != null) {
     document.getElementById("procBadge").style.display = "";
     document.getElementById("procCount").textContent = d.proc_count;
+    // show warning if very few processes (container namespace)
+    const warn = document.getElementById("procHostWarning");
+    warn.classList.toggle("hidden", d.proc_count > 10);
   }
-  updateProcs(d.top_procs);
+  const procs = procSort === "cpu"
+    ? (d.top_procs_cpu || d.top_procs || [])
+    : (d.top_procs_ram || d.top_procs || []);
+  updateProcs(procs);
 
-  // ── Uptime ──
+  // Docker
+  updateDocker(d.docker || []);
+
+  // Uptime
   if (d.uptime_s != null) {
     document.getElementById("uptimeBadge").style.display = "";
     document.getElementById("uptimeText").textContent = fmtUptime(d.uptime_s);
@@ -511,11 +612,29 @@ function handleMetrics(d) {
 // ══════════════════════════════════════════════════════
 // UI HELPERS
 // ══════════════════════════════════════════════════════
-function updateGauge(ringId, textId, value, max) {
+function thresholdColor(value, thresholds, defaultColor) {
+  if (value == null) return defaultColor;
+  for (const [limit, color] of thresholds) {
+    if (value >= limit) return color;
+  }
+  return defaultColor;
+}
+
+function setCardAlert(cardId, value, criticalThreshold, warnThreshold) {
+  const el = document.getElementById(cardId);
+  if (!el || value == null) return;
+  el.classList.toggle("alert-glow", value >= criticalThreshold);
+  el.classList.toggle("warn-glow",  value >= warnThreshold && value < criticalThreshold);
+}
+
+function updateGauge(ringId, textId, value, max, color) {
   const v = value ?? 0;
   const pct = Math.min(v / max, 1);
-  document.getElementById(ringId).style.strokeDashoffset = CIRC * (1 - pct);
-  document.getElementById(textId).textContent = value != null ? (Number.isInteger(v) ? v : v.toFixed(1)) : "--";
+  const el = document.getElementById(ringId);
+  el.style.strokeDashoffset = CIRC * (1 - pct);
+  if (color) el.setAttribute("stroke", color);
+  document.getElementById(textId).textContent =
+    value != null ? (Number.isInteger(v) ? v : v.toFixed(1)) : "--";
 }
 
 function pushHistory(key, val) {
@@ -523,7 +642,7 @@ function pushHistory(key, val) {
   if (history[key].length > MAX_HISTORY) history[key].shift();
 }
 
-function updateCores(cores) {
+function updateCores(cores, temps) {
   if (!cores) return;
   const container = document.getElementById("coresContainer");
   if (container.children.length !== cores.length) {
@@ -532,36 +651,119 @@ function updateCores(cores) {
       const row = document.createElement("div");
       row.className = "flex items-center gap-2";
       row.innerHTML = `
-        <span class="text-[10px] text-white/30 w-5 text-right shrink-0">${i}</span>
-        <div class="core-bar-bg flex-1"><div class="core-bar-fill" id="core${i}" style="width:0%"></div></div>
-        <span class="text-[10px] text-white/50 w-8 text-right" id="coreT${i}">0%</span>`;
+        <span class="text-[10px] text-white/30 w-4 text-right shrink-0">${i}</span>
+        <div class="bar-bg flex-1"><div class="bar-fill" id="core${i}" style="width:0%"></div></div>
+        <span class="text-[10px] text-white/50 w-8 text-right font-mono" id="coreT${i}">0%</span>
+        <span class="text-[10px] w-10 text-right shrink-0" id="coreTemp${i}" style="color:rgba(255,255,255,.2)">--</span>`;
       container.appendChild(row);
     });
   }
   cores.forEach((pct, i) => {
     const bar = document.getElementById(`core${i}`);
     const txt = document.getElementById(`coreT${i}`);
+    const tempEl = document.getElementById(`coreTemp${i}`);
     if (!bar) return;
     bar.style.width = pct + "%";
     const hue = 210 - (pct / 100) * 180;
-    bar.style.background = `hsl(${Math.max(hue,0)}, 80%, 55%)`;
+    bar.style.background = `hsl(${Math.max(hue, 0)}, 80%, 55%)`;
     txt.textContent = pct + "%";
+    if (tempEl && temps && temps[i] != null) {
+      const t = temps[i];
+      tempEl.textContent = t + "°";
+      tempEl.style.color = t >= 80 ? "#ef4444" : t >= 70 ? "#f97316" : "rgba(255,255,255,.3)";
+    }
   });
+}
+
+function updateDisks(disks, rootPct, rootUsed) {
+  const container = document.getElementById("disksContainer");
+  // fallback to single root disk if no multi-disk data
+  const list = (disks && disks.length) ? disks : (rootPct != null ? [{
+    mount: "/", device: "root",
+    total_gb: sysInfo ? sysInfo.disk_total_gb : 0,
+    used_gb: rootUsed || 0,
+    pct: rootPct
+  }] : []);
+  if (!list.length) return;
+  container.innerHTML = list.map(d => {
+    const barColor = d.pct >= 90 ? "#ef4444" : d.pct >= 80 ? "#f97316" : "#ec4899";
+    return `
+      <div class="disk-row">
+        <div class="flex items-center justify-between mb-1">
+          <div>
+            <span class="text-xs text-white/70 font-medium">${d.mount}</span>
+            <span class="text-[10px] text-white/30 ml-2">${d.device}</span>
+          </div>
+          <div class="text-right">
+            <span class="text-xs text-white/60">${d.used_gb} / ${d.total_gb} GB</span>
+            <span class="text-[10px] ml-2 font-semibold" style="color:${barColor}">${d.pct}%</span>
+          </div>
+        </div>
+        <div class="bar-bg">
+          <div class="bar-fill" style="width:${d.pct}%;background:${barColor}"></div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function updateNetIfaces(ifaces) {
+  if (!ifaces || !ifaces.length) return;
+  const container = document.getElementById("ifaceContainer");
+  container.innerHTML = ifaces.map(f => `
+    <div class="iface-row">
+      <span class="text-white/40 font-mono w-20 truncate">${f.iface}</span>
+      <span class="text-white/50">↑ ${fmtSpeed(f.up_kbps)}</span>
+      <span class="text-white/50">↓ ${fmtSpeed(f.down_kbps)}</span>
+    </div>`).join("");
 }
 
 function updateProcs(procs) {
   if (!procs || !procs.length) return;
+  const sortVal = procSort === "cpu" ? "cpu" : "ram";
+  const maxVal  = Math.max(...procs.map(p => p[sortVal]), 0.1);
   const container = document.getElementById("procsContainer");
-  container.innerHTML = "";
-  procs.forEach(p => {
-    const row = document.createElement("div");
-    row.className = "proc-row";
-    row.innerHTML = `
-      <span class="flex-1 text-xs text-white/70 truncate">${p.name}</span>
-      <span class="w-16 text-right text-xs font-mono ${p.cpu > 50 ? 'text-orange-400' : 'text-white/50'}">${p.cpu}%</span>
-      <span class="w-16 text-right text-xs font-mono text-white/40">${p.ram}%</span>`;
-    container.appendChild(row);
-  });
+  container.innerHTML = procs.map(p => {
+    const val  = p[sortVal];
+    const pct  = Math.min(val / maxVal * 100, 100);
+    const color = val > 50 ? "#f97316" : "#3b82f6";
+    return `
+      <div class="proc-row">
+        <span class="text-[10px] text-white/25 w-10 text-right pr-2 shrink-0 font-mono">${p.pid || "--"}</span>
+        <div class="flex-1 min-w-0 px-1">
+          <div class="text-xs text-white/70 truncate">${p.name}</div>
+          <div class="proc-minibar mt-0.5" style="width:${pct}%;background:${color};opacity:.6"></div>
+        </div>
+        <span class="w-14 text-right text-xs font-mono ${p.cpu > 50 ? 'text-orange-400' : 'text-white/50'}">${p.cpu}%</span>
+        <span class="w-14 text-right text-xs font-mono text-white/35">${p.ram}%</span>
+      </div>`;
+  }).join("");
+}
+
+function setProcSort(by) {
+  procSort = by;
+  document.getElementById("sortCpuBtn").classList.toggle("active", by === "cpu");
+  document.getElementById("sortRamBtn").classList.toggle("active", by === "ram");
+}
+
+function updateDocker(containers) {
+  const container = document.getElementById("dockerContainer");
+  const empty = document.getElementById("dockerEmpty");
+  if (!containers || !containers.length) {
+    empty.textContent = "Docker no disponible · monta /var/run/docker.sock";
+    return;
+  }
+  empty.style.display = "none";
+  const statusColor = s => ({running:"#10b981", exited:"#ef4444", paused:"#f59e0b", restarting:"#f97316"}[s] || "#6b7280");
+  container.innerHTML = containers.map(c => `
+    <div class="docker-item">
+      <div class="status-dot" style="background:${statusColor(c.status)}"></div>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs text-white/80 truncate font-medium">${c.name}</div>
+        <div class="text-[10px] text-white/30 truncate">${c.image}</div>
+      </div>
+      <span class="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full font-medium"
+            style="background:${statusColor(c.status)}22;color:${statusColor(c.status)}">${c.status}</span>
+    </div>`).join("");
 }
 
 // ══════════════════════════════════════════════════════
@@ -569,7 +771,8 @@ function updateProcs(procs) {
 // ══════════════════════════════════════════════════════
 function drawSparkline(canvasId, data, hexColor, fixedMax) {
   const canvas = document.getElementById(canvasId);
-  const dpr = window.devicePixelRatio || 1;
+  if (!canvas) return;
+  const dpr  = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
     canvas.width  = rect.width  * dpr;
@@ -580,14 +783,13 @@ function drawSparkline(canvasId, data, hexColor, fixedMax) {
   ctx.clearRect(0, 0, w, h);
   if (data.length < 2) return;
 
-  const max = fixedMax || Math.max(...data, 0.1);
+  const max  = fixedMax || Math.max(...data, 0.1);
   const padY = h * 0.08;
-  const pts = data.map((v, i) => ({
+  const pts  = data.map((v, i) => ({
     x: (i / (data.length - 1)) * w,
     y: h - padY - (v / max) * (h - padY * 2)
   }));
 
-  // Area fill
   const grad = ctx.createLinearGradient(0, 0, 0, h);
   grad.addColorStop(0, hexColor + "35");
   grad.addColorStop(1, hexColor + "00");
@@ -604,7 +806,6 @@ function drawSparkline(canvasId, data, hexColor, fixedMax) {
   ctx.fillStyle = grad;
   ctx.fill();
 
-  // Line
   ctx.beginPath();
   ctx.moveTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) {
@@ -613,16 +814,118 @@ function drawSparkline(canvasId, data, hexColor, fixedMax) {
   }
   ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
   ctx.strokeStyle = hexColor;
-  ctx.lineWidth = 1.5 * dpr;
-  ctx.lineJoin = "round";
+  ctx.lineWidth   = 1.5 * dpr;
+  ctx.lineJoin    = "round";
   ctx.stroke();
 
-  // Dot
   const last = pts[pts.length - 1];
   ctx.beginPath();
   ctx.arc(last.x, last.y, 2.5 * dpr, 0, Math.PI * 2);
   ctx.fillStyle = hexColor;
   ctx.fill();
+}
+
+// ══════════════════════════════════════════════════════
+// HISTORY MODAL
+// ══════════════════════════════════════════════════════
+function openHistory(metric, label, color) {
+  histMetric = metric;
+  histLabel  = label;
+  histColor  = color;
+  histHours  = 1;
+  document.getElementById("histTitle").textContent = label;
+  ["h1btn","h6btn","h24btn"].forEach(id =>
+    document.getElementById(id).classList.remove("active")
+  );
+  document.getElementById("h1btn").classList.add("active");
+  document.getElementById("histModal").classList.add("show");
+  loadHistory(1);
+}
+
+function closeHistory() {
+  document.getElementById("histModal").classList.remove("show");
+}
+
+async function loadHistory(hours) {
+  histHours = hours;
+  ["h1btn","h6btn","h24btn"].forEach(id =>
+    document.getElementById(id).classList.remove("active")
+  );
+  document.getElementById(`h${hours}btn`).classList.add("active");
+  try {
+    const res  = await fetch(`/api/history?metric=${histMetric}&hours=${hours}`);
+    const data = await res.json();
+    if (!data.length) {
+      document.getElementById("histMeta").textContent = "Sin datos para este rango";
+      return;
+    }
+    const values = data.map(r => r.v ?? 0);
+    const minV   = Math.min(...values).toFixed(1);
+    const maxV   = Math.max(...values).toFixed(1);
+    const avgV   = (values.reduce((a,b)=>a+b,0)/values.length).toFixed(1);
+    document.getElementById("histMeta").textContent =
+      `${data.length} muestras · mín ${minV} · máx ${maxV} · avg ${avgV}`;
+    drawHistoryChart(data, histColor);
+  } catch(e) {
+    document.getElementById("histMeta").textContent = "Error cargando historial";
+  }
+}
+
+function drawHistoryChart(data, hexColor) {
+  const canvas = document.getElementById("histCanvas");
+  const dpr    = window.devicePixelRatio || 1;
+  const rect   = canvas.getBoundingClientRect();
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height;
+  ctx.clearRect(0, 0, w, h);
+  if (data.length < 2) return;
+
+  const values = data.map(r => r.v ?? 0);
+  const maxV   = Math.max(...values, 0.1);
+  const padX = 8 * dpr, padY = 16 * dpr;
+  const pts = data.map((r, i) => ({
+    x: padX + (i / (data.length - 1)) * (w - padX * 2),
+    y: padY + (1 - (r.v ?? 0) / maxV) * (h - padY * 2)
+  }));
+
+  // grid lines
+  ctx.strokeStyle = "rgba(255,255,255,.05)";
+  ctx.lineWidth = 1;
+  [0.25, 0.5, 0.75].forEach(f => {
+    const y = padY + f * (h - padY * 2);
+    ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+    ctx.fillStyle = "rgba(255,255,255,.2)";
+    ctx.font = `${9*dpr}px Inter, sans-serif`;
+    ctx.fillText((maxV * (1 - f)).toFixed(1), 0, y + 3*dpr);
+  });
+
+  const grad = ctx.createLinearGradient(0, 0, 0, h);
+  grad.addColorStop(0, hexColor + "40");
+  grad.addColorStop(1, hexColor + "00");
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, h);
+  ctx.lineTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const xm = (pts[i-1].x + pts[i].x) / 2;
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y + pts[i].y) / 2);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.lineTo(w - padX, h); ctx.closePath();
+  ctx.fillStyle = grad; ctx.fill();
+
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) {
+    const xm = (pts[i-1].x + pts[i].x) / 2;
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y + pts[i].y) / 2);
+  }
+  ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
+  ctx.strokeStyle = hexColor;
+  ctx.lineWidth   = 2 * dpr;
+  ctx.lineJoin    = "round";
+  ctx.stroke();
 }
 
 // ══════════════════════════════════════════════════════
@@ -651,18 +954,17 @@ function renderLinks() {
       <div class="text-xl mb-1">${l.icon}</div>
       <div class="text-sm font-medium text-white/80 truncate">${l.name}</div>
       ${l.description ? `<div class="text-[10px] text-white/30 mt-0.5 truncate">${l.description}</div>` : ""}
-    </a>
-  `).join("");
+    </a>`).join("");
 }
 
 function openModal(existing) {
   const m = document.getElementById("linkModal");
   document.getElementById("modalTitle").textContent = existing ? "Editar Servicio" : "Añadir Servicio";
-  document.getElementById("editId").value = existing ? existing.id : "";
-  document.getElementById("fName").value = existing ? existing.name : "";
-  document.getElementById("fUrl").value  = existing ? existing.url  : "";
-  document.getElementById("fIcon").value = existing ? existing.icon : "";
-  document.getElementById("fDesc").value = existing ? existing.description : "";
+  document.getElementById("editId").value  = existing ? existing.id : "";
+  document.getElementById("fName").value   = existing ? existing.name : "";
+  document.getElementById("fUrl").value    = existing ? existing.url  : "";
+  document.getElementById("fIcon").value   = existing ? existing.icon : "";
+  document.getElementById("fDesc").value   = existing ? existing.description : "";
   selectedEmoji = existing ? existing.icon : "🔗";
   selectedColor = existing ? existing.color : COLORS[0];
   renderEmojiPicker();
@@ -671,14 +973,8 @@ function openModal(existing) {
   document.getElementById("fName").focus();
 }
 
-function closeModal() {
-  document.getElementById("linkModal").classList.remove("show");
-}
-
-function editLink(id) {
-  const link = links.find(l => l.id === id);
-  if (link) openModal(link);
-}
+function closeModal() { document.getElementById("linkModal").classList.remove("show"); }
+function editLink(id) { const link = links.find(l => l.id === id); if (link) openModal(link); }
 
 async function deleteLink(id) {
   if (!confirm("¿Eliminar este servicio?")) return;
@@ -689,18 +985,17 @@ async function deleteLink(id) {
 async function saveLink() {
   const id   = document.getElementById("editId").value;
   const body = {
-    name: document.getElementById("fName").value.trim(),
-    url:  document.getElementById("fUrl").value.trim(),
-    icon: document.getElementById("fIcon").value.trim() || selectedEmoji,
-    color: selectedColor,
+    name:        document.getElementById("fName").value.trim(),
+    url:         document.getElementById("fUrl").value.trim(),
+    icon:        document.getElementById("fIcon").value.trim() || selectedEmoji,
+    color:       selectedColor,
     description: document.getElementById("fDesc").value.trim(),
   };
   if (!body.name || !body.url) return alert("Nombre y URL son obligatorios");
-
   if (id) {
-    await fetch(`/api/links/${id}`, { method: "PUT", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+    await fetch(`/api/links/${id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   } else {
-    await fetch("/api/links", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+    await fetch("/api/links", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
   }
   closeModal();
   await loadLinks();
@@ -727,8 +1022,15 @@ function renderColorPicker() {
 // FORMATTERS
 // ══════════════════════════════════════════════════════
 function fmtSpeed(kbps) {
+  if (kbps == null) return "-- KB/s";
   if (kbps >= 1024) return (kbps / 1024).toFixed(1) + " MB/s";
   return kbps.toFixed(1) + " KB/s";
+}
+
+function fmtMBps(mbps) {
+  if (mbps == null) return "--";
+  if (mbps >= 1024) return (mbps / 1024).toFixed(1) + " GB/s";
+  return mbps.toFixed(2) + " MB/s";
 }
 
 function fmtUptime(s) {
@@ -741,11 +1043,20 @@ function fmtUptime(s) {
 }
 
 // ══════════════════════════════════════════════════════
+// LAST UPDATE TICKER
+// ══════════════════════════════════════════════════════
+setInterval(() => {
+  if (lastMsgTs == null) return;
+  const secs = Math.round((Date.now() - lastMsgTs) / 1000);
+  document.getElementById("lastUpdateText").textContent =
+    secs <= 1 ? "ahora" : `hace ${secs}s`;
+}, 1000);
+
+// ══════════════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════════════
 connect();
 loadLinks();
 </script>
-
 </body>
 </html>
