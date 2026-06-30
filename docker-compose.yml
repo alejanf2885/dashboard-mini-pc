@@ -2,6 +2,7 @@ services:
   dashboard:
     build: .
     pid: host
+    privileged: true
     ports:
       - "3500:8080"
     volumes:
