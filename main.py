@@ -127,16 +127,36 @@ async def ws_endpoint(ws: WebSocket):
             mem = psutil.virtual_memory()
 
             temp = None
-            temps = psutil.sensors_temperatures()
-            if temps:
-                for key in ("coretemp", "k10temp", "cpu_thermal", "acpitz"):
-                    if key in temps and temps[key]:
-                        temp = round(
-                            max(s.current for s in temps[key]), 1
-                        )
-                        break
+            try:
+                temps = psutil.sensors_temperatures()
+                if temps:
+                    for key in ("coretemp", "k10temp", "cpu_thermal", "acpitz"):
+                        if key in temps and temps[key]:
+                            temp = round(
+                                max(s.current for s in temps[key]), 1
+                            )
+                            break
+            except Exception:
+                temp = None
 
-            disk = psutil.disk_usage("/")
+            try:
+                disk = psutil.disk_usage("/")
+                disk_pct = round(disk.percent, 1)
+                disk_used_gb = round(disk.used / 1024**3, 1)
+            except Exception:
+                disk_pct = None
+                disk_used_gb = None
+
+            try:
+                net = read_network()
+            except Exception:
+                net = {"up_kbps": 0, "down_kbps": 0,
+                       "total_sent_gb": 0, "total_recv_gb": 0}
+
+            try:
+                uptime_s = round(time.time() - psutil.boot_time())
+            except Exception:
+                uptime_s = None
 
             await ws.send_text(
                 json.dumps(
@@ -148,17 +168,17 @@ async def ws_endpoint(ws: WebSocket):
                         "ram_used_gb": round(mem.used / 1024**3, 1),
                         "temp": temp,
                         "power": read_power(),
-                        "disk_pct": round(disk.percent, 1),
-                        "disk_used_gb": round(disk.used / 1024**3, 1),
-                        "net": read_network(),
-                        "uptime_s": round(
-                            time.time() - psutil.boot_time()
-                        ),
+                        "disk_pct": disk_pct,
+                        "disk_used_gb": disk_used_gb,
+                        "net": net,
+                        "uptime_s": uptime_s,
                     }
                 )
             )
             await asyncio.sleep(2)
     except WebSocketDisconnect:
+        pass
+    except Exception:
         pass
 
 
