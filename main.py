@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 
-DB_PATH = os.getenv("DB_PATH", "/data/dashboard/metrics.db")
+DB_PATH = "/data/dashboard/metrics.db"
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "")
 TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
@@ -27,6 +27,8 @@ ALERT_COOLDOWN_SECS = 600
 # ---------------- POWER (igual que el tuyo) ----------------
 RAPL_BASE = "/sys/class/powercap"
 _power_state = {"energy_uj": None, "ts": None, "watts": None}
+
+
 
 
 def _rapl_domains():
