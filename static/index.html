@@ -1,397 +1,282 @@
 <!DOCTYPE html>
-<html lang="es" class="dark">
+<html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Homelab</title>
-  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
-  <style>
-    :root {
-      color-scheme: dark;
-      --bg: #0a0a0b;
-      --card: #131316;
-      --card-hi: #17171b;
-      --border: #232328;
-      --border-hi: #2e2e35;
-      --txt: #ededef;
-      --txt-2: #9a9aa3;
-      --txt-3: #5a5a64;
-      --txt-4: #3a3a42;
-      --blue: #4d8dff;
-      --green: #3ecf8e;
-      --amber: #f0a838;
-      --gray: #7a7a85;
-      --mono: 'JetBrains Mono', ui-monospace, monospace;
-    }
-    * { box-sizing: border-box; }
-    body {
-      background:
-        radial-gradient(900px 500px at 85% -10%, rgba(77,141,255,0.05), transparent 70%),
-        var(--bg);
-      color: var(--txt);
-      font-family: 'Inter', system-ui, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      margin: 0;
-    }
-    .wrap { max-width: 1200px; margin: 0 auto; padding: 22px 24px 40px; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Homelab Dashboard</title>
 
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      transition: border-color .2s, background .2s;
-    }
-    .card:hover { border-color: var(--border-hi); }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-    .label { font-size: 10.5px; color: var(--txt-3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; }
-    .val { font-family: var(--mono); font-size: 27px; font-weight: 600; line-height: 1; letter-spacing: -0.02em; }
-    .unit { font-size: 13px; color: var(--txt-3); font-family: var(--mono); font-weight: 500; margin-left: 2px; }
-    .sub { font-size: 11px; color: var(--txt-3); margin-top: 7px; font-family: var(--mono); }
+<style>
+:root{
+  --bg:#0a0a0b;
+  --card:#141416;
+  --border:#242428;
+  --txt:#eaeaea;
+  --muted:#8a8a93;
+  --blue:#4d8dff;
+  --green:#3ecf8e;
+  --orange:#f0a838;
+  --red:#e05555;
+}
 
-    .metric-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-    .ic { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; }
-    .ic-blue { background: rgba(77,141,255,0.12); color: var(--blue); }
-    .ic-green { background: rgba(62,207,142,0.12); color: var(--green); }
-    .ic-amber { background: rgba(240,168,56,0.12); color: var(--amber); }
-    .ic-gray { background: rgba(122,122,133,0.12); color: var(--gray); }
-    .ic-purple { background: rgba(168,124,255,0.12); color: #a87cff; }
+body{
+  margin:0;
+  font-family:Inter,system-ui;
+  background:var(--bg);
+  color:var(--txt);
+}
 
-    .bar-track { background: #202024; border-radius: 3px; height: 4px; margin-top: 14px; overflow: hidden; }
-    .bar { height: 100%; border-radius: 3px; width: 0%; transition: width .6s cubic-bezier(.4,0,.2,1); }
+.wrap{max-width:1200px;margin:auto;padding:20px}
 
-    .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); position: relative; flex-shrink: 0; }
-    .pulse::after { content:''; position:absolute; inset:-3px; border-radius:50%; background: var(--green); opacity:.35; animation: pulse 2s infinite; }
-    @keyframes pulse { 0%{transform:scale(1);opacity:.35} 70%{transform:scale(2.2);opacity:0} 100%{opacity:0} }
+.header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px;
+}
 
-    .chart-wrap { position: relative; width: 100%; overflow: hidden; }
+.status{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:12px;
+  color:var(--muted);
+}
 
-    .row { display: flex; align-items: center; gap: 11px; padding: 9px 0; border-bottom: 1px solid var(--border); }
-    .row:last-child { border-bottom: none; }
-    .row a { font-size: 13px; color: var(--txt); flex: 1; text-decoration: none; font-weight: 500; }
-    .row a:hover { color: var(--blue); }
-    .s-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); flex-shrink: 0; box-shadow: 0 0 7px rgba(62,207,142,0.6); }
-    .port { font-size: 11px; color: var(--txt-3); font-family: var(--mono); }
-    .del { background: none; border: none; color: var(--txt-4); cursor: pointer; font-size: 16px; line-height: 1; padding: 0 2px; transition: color .15s; }
-    .del:hover { color: #e05555; }
+.dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);
+  animation:pulse 2s infinite;
+}
 
-    .empty { font-size: 12px; color: var(--txt-3); text-align: center; padding: 26px 0; }
+@keyframes pulse{
+  0%{transform:scale(1);opacity:.6}
+  70%{transform:scale(2);opacity:0}
+}
 
-    .btn-add { background: var(--card-hi); border: 1px solid var(--border-hi); border-radius: 8px; padding: 5px 11px; font-size: 11px; color: var(--txt-2); cursor: pointer; font-weight: 500; transition: all .15s; }
-    .btn-add:hover { background: #1d1d22; color: var(--txt); border-color: #3a3a42; }
+.grid{
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:12px;
+}
 
-    .ev-row { display: flex; gap: 11px; padding: 9px 0; border-bottom: 1px solid var(--border); align-items: flex-start; }
-    .ev-row:last-child { border-bottom: none; }
-    .ev-tag { width: 6px; height: 6px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
-    .ev-msg { font-size: 12.5px; color: var(--txt-2); flex: 1; line-height: 1.4; }
-    .ev-time { font-size: 11px; color: var(--txt-3); font-family: var(--mono); }
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:14px;
+}
 
-    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.72); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; }
-    input { background: #1a1a1e; border: 1px solid var(--border-hi); border-radius: 8px; color: var(--txt); padding: 9px 11px; font-size: 13px; width: 100%; outline: none; transition: border-color .15s; font-family: inherit; }
-    input:focus { border-color: var(--blue); }
-    input::placeholder { color: var(--txt-3); }
-    input[type=date] { font-family: var(--mono); font-size: 11px; padding: 5px 9px; color: var(--txt-2); width: auto; }
+.label{font-size:11px;color:var(--muted)}
+.value{font-size:26px;font-weight:600;margin-top:6px}
 
-    .date-input { background: #1a1a1e; border: 1px solid var(--border-hi); border-radius: 8px; }
-  </style>
+.bar{
+  height:4px;background:#222;border-radius:4px;margin-top:10px;overflow:hidden
+}
+.bar > div{height:100%;width:0%;transition:.3s}
+
+.cpu{background:var(--blue)}
+.ram{background:var(--green)}
+.disk{background:#888}
+.temp{background:var(--orange)}
+.power{background:#a87cff}
+
+.layout{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:12px;
+  margin-top:12px;
+}
+
+.events{
+  font-size:12px;
+  max-height:320px;
+  overflow:auto;
+}
+
+.event{
+  padding:8px 0;
+  border-bottom:1px solid #222;
+}
+
+.event.warning{color:var(--orange)}
+.event.error{color:var(--red)}
+.event.info{color:var(--green)}
+
+canvas{width:100%!important;height:260px!important}
+</style>
 </head>
+
 <body>
+
 <div class="wrap">
 
-  <div class="flex items-center justify-between" style="margin-bottom:20px">
-    <div class="flex items-center" style="gap:11px">
-      <div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#1d1d22,#131316);border:1px solid var(--border-hi);display:flex;align-items:center;justify-content:center;font-size:17px">🖥️</div>
-      <div>
-        <div style="font-size:15px;font-weight:600;letter-spacing:-0.01em">Homelab</div>
-        <div style="font-size:11px;color:var(--txt-3);font-family:var(--mono)">ThinkCentre M720q</div>
-      </div>
-    </div>
-    <div class="flex items-center" style="gap:9px;font-size:12px;color:var(--txt-2)">
-      <span class="pulse"></span>
-      <span id="statusText">conectando…</span>
-      <span id="clock" style="color:var(--txt-3);font-family:var(--mono);margin-left:4px"></span>
+  <div class="header">
+    <div>🖥️ Homelab</div>
+
+    <div class="status">
+      <div class="dot" id="dot"></div>
+      <span id="status">conectando</span>
     </div>
   </div>
 
-  <div class="grid grid-cols-5 gap-3" style="margin-bottom:12px">
-    <div class="card" style="padding:17px">
-      <div class="metric-head"><span class="label">CPU</span><span class="ic ic-blue">⚡</span></div>
-      <div class="val"><span id="cpuVal">—</span><span class="unit">%</span></div>
-      <div class="sub" id="cpuPeak">pico: —</div>
-      <div class="bar-track"><div id="cpuBar" class="bar" style="background:linear-gradient(90deg,#3a6fd8,#4d8dff)"></div></div>
+  <div class="grid">
+
+    <div class="card">
+      <div class="label">CPU</div>
+      <div class="value" id="cpu">—</div>
+      <div class="bar"><div class="cpu" id="cpuBar"></div></div>
     </div>
-    <div class="card" style="padding:17px">
-      <div class="metric-head"><span class="label">Memoria</span><span class="ic ic-green">▦</span></div>
-      <div class="val"><span id="ramVal">—</span><span class="unit">GB</span></div>
-      <div class="sub" id="ramPeak">pico: —</div>
-      <div class="bar-track"><div id="ramBar" class="bar" style="background:linear-gradient(90deg,#2ea876,#3ecf8e)"></div></div>
+
+    <div class="card">
+      <div class="label">RAM</div>
+      <div class="value" id="ram">—</div>
+      <div class="bar"><div class="ram" id="ramBar"></div></div>
     </div>
-    <div class="card" style="padding:17px">
-      <div class="metric-head"><span class="label">Temperatura</span><span class="ic ic-amber">🌡</span></div>
-      <div class="val"><span id="tempVal">—</span><span class="unit">°C</span></div>
-      <div class="sub" id="tempPeak">pico: —</div>
-      <div class="bar-track"><div id="tempBar" class="bar" style="background:linear-gradient(90deg,#d88a28,#f0a838)"></div></div>
+
+    <div class="card">
+      <div class="label">DISK</div>
+      <div class="value" id="disk">—</div>
+      <div class="bar"><div class="disk" id="diskBar"></div></div>
     </div>
-    <div class="card" style="padding:17px">
-      <div class="metric-head"><span class="label">Disco</span><span class="ic ic-gray">◉</span></div>
-      <div class="val"><span id="diskVal">—</span><span class="unit">GB</span></div>
-      <div class="sub" id="diskSub">de — GB</div>
-      <div class="bar-track"><div id="diskBar" class="bar" style="background:linear-gradient(90deg,#5a5a64,#8a8a95)"></div></div>
+
+    <div class="card">
+      <div class="label">TEMP</div>
+      <div class="value" id="temp">—</div>
+      <div class="bar"><div class="temp" id="tempBar"></div></div>
     </div>
-    <div class="card" style="padding:17px">
-      <div class="metric-head"><span class="label">Consumo CPU</span><span class="ic ic-purple">⏻</span></div>
-      <div class="val"><span id="powerVal">—</span><span class="unit">W</span></div>
-      <div class="sub" id="powerPeak">pico: —</div>
-      <div class="bar-track"><div id="powerBar" class="bar" style="background:linear-gradient(90deg,#8a5cf0,#a87cff)"></div></div>
+
+    <div class="card">
+      <div class="label">POWER</div>
+      <div class="value" id="power">—</div>
+      <div class="bar"><div class="power" id="powerBar"></div></div>
     </div>
+
   </div>
 
-  <div class="grid gap-3" style="grid-template-columns:2fr 1fr;margin-bottom:12px">
-    <div class="card" style="padding:18px">
-      <div class="flex items-center justify-between" style="margin-bottom:16px">
-        <span class="label">Métricas del día</span>
-        <span class="date-input"><input type="date" id="dayPicker" /></span>
-      </div>
-      <div class="chart-wrap"><canvas id="mainChart" height="118"></canvas></div>
+  <div class="layout">
+
+    <div class="card">
+      <div class="label">Live Metrics</div>
+      <canvas id="chart"></canvas>
     </div>
-    <div class="card" style="padding:18px">
-      <div class="label" style="margin-bottom:16px">Temperatura</div>
-      <div class="chart-wrap"><canvas id="tempChart" height="118"></canvas></div>
+
+    <div class="card">
+      <div class="label">Events</div>
+      <div class="events" id="events"></div>
     </div>
+
   </div>
 
-  <div class="grid grid-cols-2 gap-3">
-    <div class="card" style="padding:18px">
-      <div class="flex items-center justify-between" style="margin-bottom:6px">
-        <span class="label">Servicios</span>
-        <div class="flex" style="gap:7px">
-          <button onclick="discoverServices(this)" class="btn-add">⟳ descubrir</button>
-          <button onclick="openModal()" class="btn-add">+ añadir</button>
-        </div>
-      </div>
-      <div id="servicesList"></div>
-    </div>
-    <div class="card" style="padding:18px">
-      <div class="label" style="margin-bottom:6px">Eventos recientes</div>
-      <div id="eventsList"></div>
-    </div>
-  </div>
-
-</div>
-
-<div id="modal" class="modal-bg" style="display:none">
-  <div class="card" style="width:340px;padding:22px;background:var(--card-hi)">
-    <div style="font-size:15px;font-weight:600;margin-bottom:16px">Añadir servicio</div>
-    <div class="flex flex-col" style="gap:11px">
-      <input id="svcName" placeholder="Nombre (ej. Coolify)" />
-      <input id="svcUrl" placeholder="URL (ej. http://192.168.1.78:8000)" />
-      <input id="svcPort" placeholder="Puerto (opcional)" />
-    </div>
-    <div class="flex" style="gap:9px;margin-top:18px">
-      <button onclick="saveService()" style="flex:1;background:var(--blue);border:none;border-radius:8px;padding:9px;font-size:13px;color:#fff;cursor:pointer;font-weight:500">Guardar</button>
-      <button onclick="closeModal()" style="flex:1;background:#1a1a1e;border:1px solid var(--border-hi);border-radius:8px;padding:9px;font-size:13px;color:var(--txt-2);cursor:pointer">Cancelar</button>
-    </div>
-  </div>
 </div>
 
 <script>
-const GRID = 'rgba(255,255,255,0.04)';
-const TICK = '#55555f';
+const MAX = 50;
 
-function gradient(ctx, area, hex) {
-  const g = ctx.createLinearGradient(0, area.top, 0, area.bottom);
-  g.addColorStop(0, hex + '40');
-  g.addColorStop(1, hex + '00');
-  return g;
-}
+const ctx = document.getElementById("chart");
 
-const chartDefaults = {
-  responsive: true, maintainAspectRatio: false,
-  interaction: { intersect: false, mode: 'index' },
-  plugins: {
-    legend: { labels: { color: TICK, font: { size: 11, family: 'Inter' }, boxWidth: 8, boxHeight: 8, usePointStyle: true, pointStyle: 'circle', padding: 12 } },
-    tooltip: { backgroundColor: '#1a1a1e', borderColor: '#2e2e35', borderWidth: 1, titleColor: '#ededef', bodyColor: '#9a9aa3', padding: 10, cornerRadius: 8, titleFont: { family: 'JetBrains Mono', size: 11 }, bodyFont: { family: 'JetBrains Mono', size: 11 } }
+const chart = new Chart(ctx, {
+  type:"line",
+  data:{
+    labels:[],
+    datasets:[
+      {label:"CPU",data:[],borderColor:"#4d8dff",tension:.35},
+      {label:"RAM",data:[],borderColor:"#3ecf8e",tension:.35}
+    ]
   },
-  scales: {
-    x: { ticks: { color: TICK, font: { size: 10, family: 'JetBrains Mono' }, maxTicksLimit: 8 }, grid: { color: GRID, drawTicks: false }, border: { display: false } },
-    y: { ticks: { color: TICK, font: { size: 10, family: 'JetBrains Mono' } }, grid: { color: GRID, drawTicks: false }, border: { display: false } }
+  options:{
+    animation:false,
+    responsive:true,
+    scales:{y:{min:0,max:100}}
   }
-};
-
-const mainChart = new Chart(document.getElementById('mainChart'), {
-  type: 'line',
-  data: { labels: [], datasets: [
-    { label: 'CPU', data: [], borderColor: '#4d8dff', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true,
-      backgroundColor: (c) => { const {ctx,chartArea} = c.chart; return chartArea ? gradient(ctx, chartArea, '#4d8dff') : 'transparent'; } },
-    { label: 'RAM', data: [], borderColor: '#3ecf8e', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true,
-      backgroundColor: (c) => { const {ctx,chartArea} = c.chart; return chartArea ? gradient(ctx, chartArea, '#3ecf8e') : 'transparent'; } }
-  ]},
-  options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 100, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '%' } } } }
 });
 
-const tempChart = new Chart(document.getElementById('tempChart'), {
-  type: 'line',
-  data: { labels: [], datasets: [
-    { data: [], borderColor: '#f0a838', borderWidth: 2, pointRadius: 0, tension: 0.4, fill: true,
-      backgroundColor: (c) => { const {ctx,chartArea} = c.chart; return chartArea ? gradient(ctx, chartArea, '#f0a838') : 'transparent'; } }
-  ]},
-  options: { ...chartDefaults, plugins: { ...chartDefaults.plugins, legend: { display: false } }, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 30, ticks: { ...chartDefaults.scales.y.ticks, callback: v => v + '°' } } } }
-});
+function push(t,cpu,ram){
+  chart.data.labels.push(t);
+  chart.data.datasets[0].data.push(cpu);
+  chart.data.datasets[1].data.push(ram);
 
-function fmt(ts) {
-  const d = new Date(ts * 1000);
-  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+  if(chart.data.labels.length>MAX){
+    chart.data.labels.shift();
+    chart.data.datasets.forEach(d=>d.data.shift());
+  }
+
+  chart.update("none");
 }
 
-async function loadHistory(day) {
-  const url = day ? `/api/history?day=${day}` : '/api/history';
-  const res = await fetch(url);
-  const data = await res.json();
-  const labels = data.map(r => fmt(r.ts));
-  mainChart.data.labels = labels;
-  mainChart.data.datasets[0].data = data.map(r => r.cpu);
-  mainChart.data.datasets[1].data = data.map(r => r.ram);
-  mainChart.update('none');
-  tempChart.data.labels = labels;
-  tempChart.data.datasets[0].data = data.map(r => r.temp);
-  tempChart.update('none');
+function eventType(msg){
+  if(msg.includes("CPU")) return "warning";
+  if(msg.includes("RAM")) return "warning";
+  if(msg.includes("Temp")) return "error";
+  return "info";
 }
 
-async function loadPeaks(day) {
-  const url = day ? `/api/peaks?day=${day}` : '/api/peaks';
-  const res = await fetch(url);
-  const p = await res.json();
-  if (p.cpu) document.getElementById('cpuPeak').textContent = `pico ${p.cpu.value}% · ${p.cpu.time}`;
-  if (p.ram) document.getElementById('ramPeak').textContent = `pico ${p.ram.value}% · ${p.ram.time}`;
-  if (p.temp && p.temp.value) document.getElementById('tempPeak').textContent = `pico ${p.temp.value}°C · ${p.temp.time}`;
-  if (p.power && p.power.value) document.getElementById('powerPeak').textContent = `pico ${p.power.value}W · ${p.power.time}`;
+function addEvent(msg){
+  const el=document.getElementById("events");
+  const div=document.createElement("div");
+  div.className="event "+eventType(msg);
+  div.textContent=msg;
+  el.prepend(div);
+
+  if(el.children.length>15) el.removeChild(el.lastChild);
 }
 
-async function loadServices() {
-  const res = await fetch('/api/services');
-  const services = await res.json();
-  const el = document.getElementById('servicesList');
-  if (!services.length) { el.innerHTML = '<div class="empty">Sin servicios todavía.<br>Añade el primero con “+ añadir”.</div>'; return; }
-  el.innerHTML = services.map(s => `
-    <div class="row">
-      <div class="s-dot"></div>
-      <a href="${/^https?:\/\//i.test(s.url) ? s.url : 'http://' + s.url}" target="_blank">${s.name}</a>
-      ${s.port ? `<span class="port">:${s.port}</span>` : ''}
-      <button class="del" onclick="deleteService(${s.id})">×</button>
-    </div>
-  `).join('');
-}
+// ---------------- WS ROBUSTO ----------------
 
-async function loadEvents() {
-  const res = await fetch('/api/events');
-  const events = await res.json();
-  const el = document.getElementById('eventsList');
-  if (!events.length) { el.innerHTML = '<div class="empty">Sin eventos recientes.</div>'; return; }
-  const colors = { warning: '#f0a838', info: '#3ecf8e', error: '#e05555' };
-  el.innerHTML = events.slice(0, 8).map(e => `
-    <div class="ev-row">
-      <span class="ev-tag" style="background:${colors[e.level] || '#4d8dff'}"></span>
-      <span class="ev-msg">${e.message}</span>
-      <span class="ev-time">${fmt(e.ts)}</span>
-    </div>
-  `).join('');
-}
+let ws;
+let retry=1000;
 
-function openModal() { document.getElementById('modal').style.display = 'flex'; }
-function closeModal() { document.getElementById('modal').style.display = 'none'; }
+function connect(){
 
-async function saveService() {
-  const name = document.getElementById('svcName').value.trim();
-  let url = document.getElementById('svcUrl').value.trim();
-  const port = document.getElementById('svcPort').value.trim();
-  if (!name || !url) return;
-  if (!/^https?:\/\//i.test(url)) url = 'http://' + url;
-  await fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, url, port }) });
-  closeModal();
-  document.getElementById('svcName').value = '';
-  document.getElementById('svcUrl').value = '';
-  document.getElementById('svcPort').value = '';
-  loadServices();
-}
+  ws = new WebSocket("ws://"+location.host+"/ws");
 
-async function deleteService(id) {
-  await fetch(`/api/services/${id}`, { method: 'DELETE' });
-  loadServices();
-}
+  ws.onopen=()=>{
+    retry=1000;
+    document.getElementById("status").textContent="online";
+    document.getElementById("dot").style.background="#3ecf8e";
+  };
 
-async function discoverServices(btn) {
-  const original = btn.textContent;
-  btn.textContent = 'buscando…';
-  btn.disabled = true;
-  try {
-    const [discRes, svcRes] = await Promise.all([fetch('/api/discover'), fetch('/api/services')]);
-    const discovered = await discRes.json();
-    const existing = await svcRes.json();
-    if (discovered.error) { btn.textContent = 'sin acceso a Docker'; setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500); return; }
-    const usedPorts = new Set(existing.map(s => s.port).filter(Boolean));
-    const host = location.hostname;
-    let added = 0;
-    for (const d of discovered) {
-      if (usedPorts.has(d.port)) continue;
-      await fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: d.name, url: `http://${host}:${d.port}`, port: d.port }) });
-      added++;
+  ws.onclose=()=>{
+    document.getElementById("status").textContent="reconectando...";
+    document.getElementById("dot").style.background="#f0a838";
+
+    setTimeout(connect, retry);
+    retry = Math.min(retry*1.5, 10000);
+  };
+
+  ws.onerror=()=>{
+    ws.close();
+  };
+
+  ws.onmessage=(e)=>{
+    const d=JSON.parse(e.data);
+    const t=new Date(d.ts*1000).toLocaleTimeString();
+
+    // valores
+    cpu.textContent=d.cpu+"%";
+    ram.textContent=d.ram+"%";
+    disk.textContent=d.disk+"%";
+    temp.textContent=d.temp??"—";
+    power.textContent=d.power??"—";
+
+    // barras
+    cpuBar.style.width=d.cpu+"%";
+    ramBar.style.width=d.ram+"%";
+    diskBar.style.width=d.disk+"%";
+    tempBar.style.width=(d.temp||0)+"%";
+    powerBar.style.width=Math.min((d.power||0)*2,100)+"%";
+
+    push(t,d.cpu,d.ram);
+
+    if(d.alerts){
+      d.alerts.forEach(addEvent);
     }
-    btn.textContent = added ? `+${added} añadidos` : 'todo al día';
-    loadServices();
-  } catch (e) {
-    btn.textContent = 'error';
-  }
-  setTimeout(() => { btn.textContent = original; btn.disabled = false; }, 2500);
+  };
 }
 
-const evtSource = new EventSource('/api/stream');
-evtSource.onmessage = (e) => {
-  const d = JSON.parse(e.data);
-  document.getElementById('cpuVal').textContent = d.cpu;
-  document.getElementById('cpuBar').style.width = d.cpu + '%';
-  document.getElementById('ramVal').textContent = d.ram_used_gb;
-  document.getElementById('ramBar').style.width = d.ram_pct + '%';
-  if (d.temp != null) {
-    document.getElementById('tempVal').textContent = d.temp;
-    document.getElementById('tempBar').style.width = Math.min(d.temp, 100) + '%';
-  }
-  if (d.power != null) {
-    document.getElementById('powerVal').textContent = d.power;
-    document.getElementById('powerBar').style.width = Math.min(d.power / 65 * 100, 100) + '%';
-  }
-  document.getElementById('statusText').textContent = 'todos los servicios activos';
-};
-
-setInterval(() => {
-  const now = new Date();
-  document.getElementById('clock').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
-}, 1000);
-
-const picker = document.getElementById('dayPicker');
-picker.value = new Date().toISOString().split('T')[0];
-picker.addEventListener('change', () => { loadHistory(picker.value); loadPeaks(picker.value); });
-
-async function loadCurrent() {
-  const res = await fetch('/api/current');
-  const d = await res.json();
-  document.getElementById('diskVal').textContent = d.disk_used_gb;
-  document.getElementById('diskSub').textContent = `de ${d.disk_total_gb} GB · ${d.disk_pct}%`;
-  document.getElementById('diskBar').style.width = d.disk_pct + '%';
-}
-
-loadCurrent();
-loadHistory();
-loadPeaks();
-loadServices();
-loadEvents();
-setInterval(loadEvents, 30000);
-setInterval(loadCurrent, 60000);
-setInterval(() => loadHistory(picker.value), 120000);
-setInterval(() => loadPeaks(picker.value), 120000);
+connect();
 </script>
+
 </body>
 </html>
