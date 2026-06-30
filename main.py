@@ -2,6 +2,7 @@ import asyncio
 import json
 import os
 import platform
+import re
 import socket
 import time
 import uuid
@@ -205,6 +206,22 @@ def read_disks():
 _docker_cache: dict = {"data": [], "ts": 0.0}
 DOCKER_CACHE_TTL = 10.0
 
+# Coolify appends a random alphanum suffix like "-f8imbhdjwffwitoeg2tkm0h3"
+_COOLIFY_SUFFIX = re.compile(r"-[a-z0-9]{15,}$")
+
+
+def _friendly_name(raw: str, labels: dict) -> str:
+    # prefer compose service label set by Coolify/Docker Compose
+    for key in ("com.docker.compose.service", "coolify.name"):
+        if labels.get(key):
+            return labels[key]
+    return _COOLIFY_SUFFIX.sub("", raw) or raw
+
+
+def _short_image(image: str) -> str:
+    # "ghcr.io/home-assistant/home-assistant:latest" → "home-assistant"
+    return image.split(":")[ 0].split("/")[-1]
+
 
 async def read_docker_containers():
     now = time.time()
@@ -218,10 +235,12 @@ async def read_docker_containers():
             return _docker_cache["data"]
         result = []
         for c in resp.json():
+            raw = c["Names"][0].lstrip("/") if c["Names"] else c["Id"][:12]
+            labels = c.get("Labels") or {}
             result.append({
                 "id": c["Id"][:12],
-                "name": c["Names"][0].lstrip("/") if c["Names"] else c["Id"][:12],
-                "image": c["Image"].split(":")[0],
+                "name": _friendly_name(raw, labels),
+                "image": _short_image(c["Image"]),
                 "status": c["State"],
                 "status_text": c["Status"],
             })

@@ -1,0 +1,13 @@
+services:
+  dashboard:
+    build: .
+    pid: host
+    ports:
+      - "3500:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - dashboard-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  dashboard-data:
