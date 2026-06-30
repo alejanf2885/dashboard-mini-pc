@@ -291,14 +291,24 @@ def read_cpu_temps() -> list | None:
 # ── Docker Containers ────────────────────────────────
 _docker_cache: dict = {"data": [], "ts": 0.0}
 DOCKER_CACHE_TTL = 10.0
-_COOLIFY_SUFFIX = re.compile(r"-[a-z0-9]{15,}$")
+# Matches Coolify-style hash suffixes: -<alphanum 8+> or -<digits 8+>
+_COOLIFY_SUFFIX = re.compile(r"-[a-z0-9]{8,}$")
+# Matches names that ARE entirely a hash (e.g. "vae4o3z5adlev11l2h4qvft5")
+_ALL_HASH = re.compile(r"^[a-f0-9]{12,}$")
 
 
-def _friendly_name(raw: str, labels: dict) -> str:
-    for key in ("com.docker.compose.service", "coolify.name"):
-        if labels.get(key):
-            return labels[key]
-    return _COOLIFY_SUFFIX.sub("", raw) or raw
+def _friendly_name(raw: str, labels: dict, image: str = "") -> str:
+    # 1. Prefer explicit labels set by Coolify/compose
+    for key in ("com.docker.compose.service", "coolify.name", "com.docker.compose.project.config_files"):
+        val = labels.get(key, "")
+        if val and not _ALL_HASH.match(val):
+            return val
+    # 2. Strip hash suffix
+    cleaned = _COOLIFY_SUFFIX.sub("", raw)
+    # 3. If what remains is still a pure hash, fall back to image name
+    if _ALL_HASH.match(cleaned):
+        return _short_image(image) or raw
+    return cleaned or raw
 
 
 def _short_image(image: str) -> str:
@@ -321,7 +331,7 @@ async def read_docker_containers() -> list:
             labels = c.get("Labels") or {}
             result.append({
                 "id": c["Id"][:12],
-                "name": _friendly_name(raw, labels),
+                "name": _friendly_name(raw, labels, c.get("Image", "")),
                 "image": _short_image(c["Image"]),
                 "status": c["State"],
                 "status_text": c["Status"],

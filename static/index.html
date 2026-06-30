@@ -4,138 +4,150 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Homelab Dashboard</title>
-  <meta name="description" content="Real-time homelab monitoring dashboard">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🖥️</text></svg>">
-
   <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
   <style>
     *, *::before, *::after { box-sizing: border-box; }
     :root {
-      --cpu: #3b82f6; --ram: #10b981; --temp: #f59e0b; --load: #f97316;
-      --disk: #ec4899; --net: #06b6d4; --bg: #07070e; --card: rgba(255,255,255,0.025);
-      --border: rgba(255,255,255,0.06); --circ: 326.73;
+      --cpu:#3b82f6; --ram:#10b981; --temp:#f59e0b; --load:#f97316;
+      --disk:#ec4899; --net:#06b6d4; --power:#a78bfa;
+      --bg:#07070e; --card:rgba(255,255,255,.025); --border:rgba(255,255,255,.06);
+      --circ:326.73;
     }
-    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: #e2e8f0; margin: 0; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:#e2e8f0; margin:0; }
 
-    .gauge-track { fill: none; stroke: rgba(255,255,255,0.05); stroke-width: 7; }
-    .gauge-fill  { fill: none; stroke-width: 7; stroke-linecap: round;
-                   stroke-dasharray: var(--circ); stroke-dashoffset: var(--circ);
-                   transition: stroke-dashoffset .8s cubic-bezier(.4,0,.2,1), stroke .4s ease; }
+    .gauge-track { fill:none; stroke:rgba(255,255,255,.05); stroke-width:7; }
+    .gauge-fill  { fill:none; stroke-width:7; stroke-linecap:round;
+                   stroke-dasharray:var(--circ); stroke-dashoffset:var(--circ);
+                   transition:stroke-dashoffset .8s cubic-bezier(.4,0,.2,1),stroke .4s; }
 
-    .sparkline { width: 100%; height: 40px; display: block; border-radius: 6px; cursor: pointer; }
-    .sparkline:hover { opacity: .85; }
+    .sparkline { width:100%; height:40px; display:block; border-radius:6px; cursor:pointer; }
+    .sparkline:hover { opacity:.8; }
 
-    @keyframes pulse-dot  { 0%,100%{ opacity:1; transform:scale(1); } 50%{ opacity:.5; transform:scale(.85); } }
-    @keyframes fade-in    { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
-    @keyframes spin       { to { transform: rotate(360deg); } }
-    @keyframes alert-glow { 0%,100%{ box-shadow:0 0 0 rgba(239,68,68,0); } 50%{ box-shadow:0 0 24px rgba(239,68,68,.35); } }
-    @keyframes warn-glow  { 0%,100%{ box-shadow:0 0 0 rgba(249,115,22,0); } 50%{ box-shadow:0 0 18px rgba(249,115,22,.3); } }
+    @keyframes pulse-dot  { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.85)} }
+    @keyframes fade-in    { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes spin       { to{transform:rotate(360deg)} }
+    @keyframes alert-glow { 0%,100%{box-shadow:0 0 0 rgba(239,68,68,0)} 50%{box-shadow:0 0 24px rgba(239,68,68,.4)} }
+    @keyframes warn-glow  { 0%,100%{box-shadow:0 0 0 rgba(249,115,22,0)} 50%{box-shadow:0 0 18px rgba(249,115,22,.35)} }
+    @keyframes bell-ring  { 0%,100%{transform:rotate(0)} 20%,60%{transform:rotate(-15deg)} 40%,80%{transform:rotate(15deg)} }
 
-    .animate-pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-    .animate-fade-in   { animation: fade-in .5s ease-out both; }
-    .alert-glow        { animation: alert-glow 2s ease-in-out infinite; }
-    .warn-glow         { animation: warn-glow 2s ease-in-out infinite; }
+    .animate-pulse-dot { animation:pulse-dot 2s ease-in-out infinite; }
+    .animate-fade-in   { animation:fade-in .5s ease-out both; }
+    .alert-glow        { animation:alert-glow 2s ease-in-out infinite; }
+    .warn-glow         { animation:warn-glow 2s ease-in-out infinite; }
 
     .card {
-      background: var(--card); border: 1px solid var(--border);
-      border-radius: 16px; padding: 20px; backdrop-filter: blur(12px);
-      transition: border-color .3s ease, box-shadow .3s ease;
+      background:var(--card); border:1px solid var(--border);
+      border-radius:16px; padding:20px; backdrop-filter:blur(12px);
+      transition:border-color .3s,box-shadow .3s;
     }
-    .card:hover { border-color: rgba(255,255,255,0.1); box-shadow: 0 8px 32px rgba(0,0,0,.3); }
+    .card:hover { border-color:rgba(255,255,255,.1); box-shadow:0 8px 32px rgba(0,0,0,.3); }
+    .card-label { font-size:11px; font-weight:600; letter-spacing:.1em; color:rgba(255,255,255,.45); text-transform:uppercase; }
 
-    .card-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; color: rgba(255,255,255,.45); text-transform: uppercase; }
+    .bar-bg   { height:8px; background:rgba(255,255,255,.06); border-radius:4px; overflow:hidden; }
+    .bar-fill { height:100%; border-radius:4px; transition:width .6s cubic-bezier(.4,0,.2,1); }
+    .bar-sm   { height:5px; background:rgba(255,255,255,.04); border-radius:3px; overflow:hidden; }
 
-    .bar-bg   { height: 8px; background: rgba(255,255,255,.06); border-radius: 4px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 4px; transition: width .6s cubic-bezier(.4,0,.2,1); }
+    .overlay { position:fixed; inset:0; background:rgba(7,7,14,.92); backdrop-filter:blur(8px);
+               display:none; place-items:center; z-index:50; }
+    .overlay.show { display:grid; }
 
-    .overlay { position: fixed; inset: 0; background: rgba(7,7,14,.92); backdrop-filter: blur(8px);
-               display: none; place-items: center; z-index: 50; }
-    .overlay.show { display: grid; }
+    .modal-bg { position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px);
+                display:none; place-items:center; z-index:60; overflow-y:auto; }
+    .modal-bg.show { display:grid; }
+    .modal-card { background:#12121a; border:1px solid var(--border); border-radius:16px;
+                  padding:24px; width:100%; max-width:460px; margin:16px; }
 
-    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.6); backdrop-filter: blur(4px);
-                display: none; place-items: center; z-index: 60; }
-    .modal-bg.show { display: grid; }
-    .modal-card { background: #12121a; border: 1px solid var(--border); border-radius: 16px;
-                  padding: 24px; width: 100%; max-width: 420px; margin: 16px; }
+    .input { width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border);
+             background:rgba(255,255,255,.04); color:white; font-size:13px; outline:none;
+             transition:border-color .2s; }
+    .input:focus { border-color:rgba(255,255,255,.2); }
+    .input::placeholder { color:rgba(255,255,255,.25); }
+    .input-sm { padding:7px 10px; font-size:12px; border-radius:8px; }
 
-    .input { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border);
-             background: rgba(255,255,255,.04); color: white; font-size: 13px; outline: none;
-             transition: border-color .2s; }
-    .input:focus { border-color: rgba(255,255,255,.2); }
-    .input::placeholder { color: rgba(255,255,255,.25); }
+    .btn { padding:8px 16px; border-radius:10px; font-size:13px; font-weight:600;
+           cursor:pointer; border:none; transition:all .2s; }
+    .btn-primary { background:#3b82f6; color:white; }
+    .btn-primary:hover { background:#2563eb; }
+    .btn-ghost { background:transparent; color:rgba(255,255,255,.5); border:1px solid var(--border); }
+    .btn-ghost:hover { background:rgba(255,255,255,.05); color:white; }
+    .btn-danger { background:transparent; color:#ef4444; border:1px solid rgba(239,68,68,.3); }
+    .btn-danger:hover { background:rgba(239,68,68,.1); }
 
-    .btn { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer;
-           border: none; transition: all .2s; }
-    .btn-primary { background: #3b82f6; color: white; }
-    .btn-primary:hover { background: #2563eb; }
-    .btn-ghost { background: transparent; color: rgba(255,255,255,.5); border: 1px solid var(--border); }
-    .btn-ghost:hover { background: rgba(255,255,255,.05); color: white; }
-    .btn-danger { background: transparent; color: #ef4444; border: 1px solid rgba(239,68,68,.3); }
-    .btn-danger:hover { background: rgba(239,68,68,.1); }
-    .btn-active { background: rgba(255,255,255,.1) !important; color: white !important; }
+    .tab-btn { padding:5px 12px; border-radius:8px; font-size:12px; font-weight:600;
+               cursor:pointer; border:1px solid var(--border); background:transparent;
+               color:rgba(255,255,255,.4); transition:all .15s; }
+    .tab-btn:hover { color:white; background:rgba(255,255,255,.05); }
+    .tab-btn.active { background:rgba(255,255,255,.1); color:white; border-color:rgba(255,255,255,.2); }
 
-    .emoji-opt { width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
-                 border-radius: 8px; cursor: pointer; font-size: 18px; border: 2px solid transparent;
-                 transition: all .15s; background: rgba(255,255,255,.03); }
-    .emoji-opt:hover { background: rgba(255,255,255,.08); }
-    .emoji-opt.selected { border-color: #3b82f6; background: rgba(59,130,246,.15); }
+    .emoji-opt { width:36px; height:36px; display:flex; align-items:center; justify-content:center;
+                 border-radius:8px; cursor:pointer; font-size:18px; border:2px solid transparent;
+                 transition:all .15s; background:rgba(255,255,255,.03); }
+    .emoji-opt:hover { background:rgba(255,255,255,.08); }
+    .emoji-opt.selected { border-color:#3b82f6; background:rgba(59,130,246,.15); }
 
-    .color-dot { width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
-                 border: 2px solid transparent; transition: all .15s; }
-    .color-dot:hover { transform: scale(1.15); }
-    .color-dot.selected { border-color: white; box-shadow: 0 0 8px rgba(255,255,255,.3); }
+    .color-dot { width:24px; height:24px; border-radius:50%; cursor:pointer;
+                 border:2px solid transparent; transition:all .15s; }
+    .color-dot:hover { transform:scale(1.15); }
+    .color-dot.selected { border-color:white; box-shadow:0 0 8px rgba(255,255,255,.3); }
 
-    .svc-card { position: relative; padding: 14px; border-radius: 12px;
-                background: rgba(255,255,255,.03); border: 1px solid var(--border);
-                cursor: pointer; transition: all .2s; text-decoration: none; display: block; }
-    .svc-card:hover { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.05);
-                      transform: translateY(-2px); box-shadow: 0 4px 20px rgba(0,0,0,.3); }
-    .svc-actions { position: absolute; top: 6px; right: 6px; display: none; gap: 2px; }
-    .svc-card:hover .svc-actions { display: flex; }
-    .svc-action { width: 24px; height: 24px; border-radius: 6px; border: none; cursor: pointer;
-                  font-size: 11px; display: flex; align-items: center; justify-content: center;
-                  background: rgba(255,255,255,.08); transition: background .15s; }
-    .svc-action:hover { background: rgba(255,255,255,.15); }
+    .svc-card { position:relative; padding:14px; border-radius:12px;
+                background:rgba(255,255,255,.03); border:1px solid var(--border);
+                text-decoration:none; display:block; transition:all .2s; }
+    .svc-card:hover { border-color:rgba(255,255,255,.12); background:rgba(255,255,255,.05);
+                      transform:translateY(-2px); box-shadow:0 4px 20px rgba(0,0,0,.3); }
+    .svc-actions { position:absolute; top:6px; right:6px; display:none; gap:2px; }
+    .svc-card:hover .svc-actions { display:flex; }
+    .svc-action { width:24px; height:24px; border-radius:6px; border:none; cursor:pointer;
+                  font-size:11px; display:flex; align-items:center; justify-content:center;
+                  background:rgba(255,255,255,.08); transition:background .15s; }
+    .svc-action:hover { background:rgba(255,255,255,.15); }
+    .health-dot { position:absolute; top:8px; right:8px; width:7px; height:7px;
+                  border-radius:50%; }
 
-    .proc-row { display: flex; align-items: center; gap: 4px; padding: 5px 0;
-                border-bottom: 1px solid rgba(255,255,255,.03); }
-    .proc-row:last-child { border-bottom: none; }
-    .proc-minibar { height: 3px; border-radius: 2px; transition: width .4s ease; }
+    .proc-row { display:flex; align-items:center; gap:4px; padding:5px 0;
+                border-bottom:1px solid rgba(255,255,255,.03); }
+    .proc-row:last-child { border-bottom:none; }
+    .proc-mini { height:3px; border-radius:2px; transition:width .4s; }
 
-    .disk-row { padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.03); }
-    .disk-row:last-child { border-bottom: none; }
+    .disk-row { padding:7px 0; border-bottom:1px solid rgba(255,255,255,.03); }
+    .disk-row:last-child { border-bottom:none; }
 
-    .iface-row { display: flex; align-items: center; justify-content: space-between;
-                 padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.03); font-size: 12px; }
-    .iface-row:last-child { border-bottom: none; }
+    .iface-row { display:flex; align-items:center; justify-content:space-between;
+                 padding:4px 0; border-bottom:1px solid rgba(255,255,255,.03); font-size:12px; }
+    .iface-row:last-child { border-bottom:none; }
 
-    .docker-item { display: flex; align-items: center; gap: 10px; padding: 7px 0;
-                   border-bottom: 1px solid rgba(255,255,255,.03); }
-    .docker-item:last-child { border-bottom: none; }
-    .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .docker-item { display:flex; align-items:center; gap:10px; padding:6px 0;
+                   border-bottom:1px solid rgba(255,255,255,.03); }
+    .docker-item:last-child { border-bottom:none; }
+    .status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
 
-    /* History modal */
-    .hist-modal-card { background: #12121a; border: 1px solid var(--border); border-radius: 16px;
-                       padding: 24px; width: 100%; max-width: 680px; margin: 16px; }
-    .hist-tab { padding: 5px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;
-                border: 1px solid var(--border); background: transparent; color: rgba(255,255,255,.4);
-                transition: all .15s; }
-    .hist-tab:hover { background: rgba(255,255,255,.05); color: white; }
-    .hist-tab.active { background: rgba(255,255,255,.1); color: white; border-color: rgba(255,255,255,.2); }
+    .ping-row { display:flex; align-items:center; justify-content:space-between; padding:5px 0;
+                border-bottom:1px solid rgba(255,255,255,.03); font-size:12px; }
+    .ping-row:last-child { border-bottom:none; }
 
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 3px; }
+    .alert-badge { display:inline-flex; align-items:center; gap:4px; padding:3px 8px;
+                   border-radius:6px; font-size:11px; font-weight:600; }
+
+    /* settings sections */
+    .setting-section { border-top:1px solid var(--border); margin-top:16px; padding-top:16px; }
+    .setting-row { display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; }
+    .setting-label { font-size:12px; color:rgba(255,255,255,.5); min-width:90px; }
+
+    /* history modal */
+    .hist-card { background:#12121a; border:1px solid var(--border); border-radius:16px;
+                 padding:24px; width:100%; max-width:680px; margin:16px; }
+
+    ::-webkit-scrollbar { width:6px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1); border-radius:3px; }
   </style>
 </head>
-
 <body class="min-h-screen antialiased">
 
-<!-- ═══════════ HEADER ═══════════ -->
+<!-- ═══ HEADER ═══ -->
 <header style="background:rgba(7,7,14,.8);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);"
         class="sticky top-0 z-40 px-4 sm:px-6 py-3">
   <div class="max-w-7xl mx-auto flex items-center justify-between gap-3 flex-wrap">
@@ -153,27 +165,40 @@
       </span>
       <span id="uptimeBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
             style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
         <span id="uptimeText">--</span>
+      </span>
+      <span id="powerBadge" class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full"
+            style="background:rgba(167,139,250,.08);border:1px solid rgba(167,139,250,.2);color:#a78bfa">
+        ⚡ <span id="powerVal">-- W</span>
       </span>
       <span id="lastUpdateBadge" class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full"
             style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
         <span id="lastUpdateText">--</span>
       </span>
-      <!-- interval selector -->
+      <!-- alert bell -->
+      <button id="alertBell" onclick="toggleAlertPanel()" class="hidden relative px-2.5 py-1 rounded-full"
+              style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:#ef4444">
+        🔔 <span id="alertCount" class="font-bold">0</span>
+      </button>
+      <!-- interval -->
       <div class="flex gap-1">
-        <button class="hist-tab" id="itvBtn1" onclick="setIntervalSecs(1)">1s</button>
-        <button class="hist-tab active" id="itvBtn2" onclick="setIntervalSecs(2)">2s</button>
-        <button class="hist-tab" id="itvBtn5" onclick="setIntervalSecs(5)">5s</button>
+        <button class="tab-btn" id="itvBtn1" onclick="setIntervalSecs(1)">1s</button>
+        <button class="tab-btn active" id="itvBtn2" onclick="setIntervalSecs(2)">2s</button>
+        <button class="tab-btn" id="itvBtn5" onclick="setIntervalSecs(5)">5s</button>
       </div>
+      <!-- settings gear -->
+      <button onclick="openSettings()" class="tab-btn" style="padding:5px 10px;" title="Ajustes">⚙️</button>
     </div>
   </div>
 </header>
 
-<!-- ═══════════ MAIN ═══════════ -->
+<!-- ═══ MAIN ═══ -->
 <main class="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-5">
 
-  <!-- ── ROW 1: GAUGE CARDS ── -->
+  <!-- ROW 1: GAUGES -->
   <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
 
     <!-- CPU -->
@@ -185,8 +210,7 @@
       <div class="flex justify-center">
         <svg viewBox="0 0 120 120" class="w-28 h-28">
           <circle cx="60" cy="60" r="52" class="gauge-track"/>
-          <circle cx="60" cy="60" r="52" class="gauge-fill" id="cpuGauge"
-                  stroke="var(--cpu)" transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="cpuGauge" stroke="var(--cpu)" transform="rotate(-90 60 60)"/>
           <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="cpuVal">--</text>
           <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">%</text>
         </svg>
@@ -201,16 +225,29 @@
         <span id="ramInfo" class="text-[10px] text-white/30">-- / -- GB</span>
       </div>
       <div class="flex justify-center">
-        <svg viewBox="0 0 120 120" class="w-28 h-28">
+        <svg viewBox="0 0 120 120" class="w-24 h-24">
           <circle cx="60" cy="60" r="52" class="gauge-track"/>
-          <circle cx="60" cy="60" r="52" class="gauge-fill" id="ramGauge"
-                  stroke="var(--ram)" transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="ramGauge" stroke="var(--ram)" transform="rotate(-90 60 60)"/>
           <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="ramVal">--</text>
           <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">GB</text>
         </svg>
       </div>
-      <canvas class="sparkline mt-3" id="ramSpark" onclick="openHistory('ram','RAM %','#10b981')"></canvas>
-      <p class="text-[10px] text-white/25 mt-1 text-center" id="swapText">Swap: --</p>
+      <!-- RAM breakdown -->
+      <div class="mt-2 space-y-1.5">
+        <div class="flex justify-between text-[10px] text-white/30 mb-1">
+          <span>Usada</span><span id="ramBreakUsed">--</span>
+        </div>
+        <div class="bar-sm"><div class="bar-fill" id="ramBarUsed" style="width:0%;background:#10b981"></div></div>
+        <div class="flex justify-between text-[10px] text-white/20">
+          <span>Caché</span><span id="ramBreakCache">--</span>
+        </div>
+        <div class="bar-sm"><div class="bar-fill" id="ramBarCache" style="width:0%;background:#6366f1"></div></div>
+        <div class="flex justify-between text-[10px] text-white/20">
+          <span>Disponible</span><span id="ramBreakFree">--</span>
+        </div>
+      </div>
+      <p class="text-[10px] text-white/20 mt-1 text-center" id="swapText">Swap: --</p>
+      <canvas class="sparkline mt-2" id="ramSpark" onclick="openHistory('ram','RAM %','#10b981')"></canvas>
     </div>
 
     <!-- TEMP -->
@@ -222,8 +259,7 @@
       <div class="flex justify-center">
         <svg viewBox="0 0 120 120" class="w-28 h-28">
           <circle cx="60" cy="60" r="52" class="gauge-track"/>
-          <circle cx="60" cy="60" r="52" class="gauge-fill" id="tempGauge"
-                  stroke="var(--temp)" transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="tempGauge" stroke="var(--temp)" transform="rotate(-90 60 60)"/>
           <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="tempVal">--</text>
           <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">°C</text>
         </svg>
@@ -231,7 +267,7 @@
       <canvas class="sparkline mt-3" id="tempSpark" onclick="openHistory('temp','Temp °C','#f59e0b')"></canvas>
     </div>
 
-    <!-- LOAD AVERAGE -->
+    <!-- LOAD -->
     <div class="card animate-fade-in" style="animation-delay:.2s">
       <div class="flex items-center justify-between mb-3">
         <span class="card-label">Load</span>
@@ -240,8 +276,7 @@
       <div class="flex justify-center">
         <svg viewBox="0 0 120 120" class="w-28 h-28">
           <circle cx="60" cy="60" r="52" class="gauge-track"/>
-          <circle cx="60" cy="60" r="52" class="gauge-fill" id="loadGauge"
-                  stroke="var(--load)" transform="rotate(-90 60 60)"/>
+          <circle cx="60" cy="60" r="52" class="gauge-fill" id="loadGauge" stroke="var(--load)" transform="rotate(-90 60 60)"/>
           <text x="60" y="56" text-anchor="middle" fill="white" font-size="22" font-weight="700" id="loadVal">--</text>
           <text x="60" y="72" text-anchor="middle" fill="rgba(255,255,255,.4)" font-size="10">avg</text>
         </svg>
@@ -250,48 +285,51 @@
     </div>
   </section>
 
-  <!-- ── ROW 2: DETAILS ── -->
+  <!-- ROW 2: DETAILS -->
   <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-    <!-- Per-core CPU + temps -->
+    <!-- Per-core CPU + freq + temp -->
     <div class="card animate-fade-in" style="animation-delay:.25s">
       <span class="card-label">CPU por Core</span>
       <div id="coresContainer" class="mt-4 space-y-2"></div>
     </div>
 
-    <!-- Disk: multiple partitions + I/O -->
+    <!-- Disks + I/O -->
     <div class="card animate-fade-in" style="animation-delay:.3s">
       <div class="flex items-center justify-between mb-3">
         <span class="card-label">Almacenamiento</span>
-        <div id="diskIOBadge" class="flex gap-3 text-[11px] text-white/40">
-          <span>R: <span id="diskReadVal">--</span></span>
-          <span>W: <span id="diskWriteVal">--</span></span>
+        <div class="text-[11px] text-white/35 flex gap-3">
+          <span>R <span id="diskReadVal" class="text-white/60">--</span></span>
+          <span>W <span id="diskWriteVal" class="text-white/60">--</span></span>
         </div>
       </div>
-      <div id="disksContainer" class="space-y-0"></div>
+      <div id="disksContainer"></div>
       <canvas class="sparkline mt-3" id="diskReadSpark" onclick="openHistory('disk_read','Disk Read MB/s','#ec4899')" title="Disk Read"></canvas>
     </div>
 
-    <!-- Network: total + per interface -->
+    <!-- Network -->
     <div class="card animate-fade-in" style="animation-delay:.35s">
       <span class="card-label">Red</span>
       <div class="mt-3 space-y-2">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+            </svg>
             <span class="text-xs text-white/50">Upload</span>
           </div>
           <span class="text-sm font-semibold text-white/90" id="netUp">0 KB/s</span>
         </div>
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
-            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            <svg class="w-4 h-4 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+            </svg>
             <span class="text-xs text-white/50">Download</span>
           </div>
           <span class="text-sm font-semibold text-white/90" id="netDown">0 KB/s</span>
         </div>
       </div>
-      <!-- per-interface list -->
       <div id="ifaceContainer" class="mt-3 pt-3" style="border-top:1px solid var(--border)"></div>
       <canvas class="sparkline mt-3" id="netSpark" onclick="openHistory('net_down','Net Download KB/s','#06b6d4')"></canvas>
       <div class="flex justify-between text-[11px] text-white/25 mt-1">
@@ -301,42 +339,78 @@
     </div>
   </section>
 
-  <!-- ── ROW 3: PROCESSES + DOCKER + SERVICES ── -->
+  <!-- ROW 3: PING + ADGUARD -->
+  <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+    <!-- Ping / Latency -->
+    <div class="card animate-fade-in" style="animation-delay:.4s">
+      <span class="card-label">Latencia</span>
+      <div id="pingContainer" class="mt-3">
+        <p class="text-xs text-white/20 text-center py-2">Configurar hosts en ⚙️ Ajustes</p>
+      </div>
+    </div>
+
+    <!-- AdGuard Home -->
+    <div class="card animate-fade-in" id="adguardCard" style="animation-delay:.42s;display:none">
+      <div class="flex items-center justify-between mb-3">
+        <span class="card-label">AdGuard Home</span>
+        <span class="text-[10px] text-white/30">últimas 24h</span>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:10px;padding:12px">
+          <div class="text-2xl font-bold text-emerald-400" id="agQueries">--</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Consultas</div>
+        </div>
+        <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.15);border-radius:10px;padding:12px">
+          <div class="text-2xl font-bold text-red-400" id="agBlocked">--</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Bloqueadas</div>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px">
+          <div class="text-xl font-bold text-white/70" id="agPct">--%</div>
+          <div class="text-[10px] text-white/40 mt-0.5">% Bloqueado</div>
+        </div>
+        <div style="background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:10px;padding:12px">
+          <div class="text-xl font-bold text-white/70" id="agMs">-- ms</div>
+          <div class="text-[10px] text-white/40 mt-0.5">Resp. media</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROW 4: PROCS + DOCKER + SERVICES -->
   <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-    <!-- Top Processes (improved) -->
-    <div class="card animate-fade-in" style="animation-delay:.4s">
+    <!-- Processes -->
+    <div class="card animate-fade-in" style="animation-delay:.45s">
       <div class="flex items-center justify-between mb-3">
         <span class="card-label">Top Procesos</span>
         <div class="flex gap-1">
-          <button class="hist-tab active" id="sortCpuBtn" onclick="setProcSort('cpu')">CPU</button>
-          <button class="hist-tab" id="sortRamBtn" onclick="setProcSort('ram')">RAM</button>
+          <button class="tab-btn active" id="sortCpuBtn" onclick="setProcSort('cpu')">CPU</button>
+          <button class="tab-btn" id="sortRamBtn" onclick="setProcSort('ram')">RAM</button>
         </div>
       </div>
-      <div class="flex items-center text-[10px] text-white/25 uppercase tracking-wider pb-1.5 mb-1"
+      <div class="flex text-[10px] text-white/25 uppercase tracking-wider pb-1.5 mb-1"
            style="border-bottom:1px solid var(--border)">
         <span class="w-10 text-right pr-2 shrink-0">PID</span>
         <span class="flex-1 pl-1">Proceso</span>
         <span class="w-14 text-right">CPU</span>
         <span class="w-14 text-right">RAM</span>
       </div>
-      <div id="procsContainer">
-        <p class="text-xs text-white/20 py-4 text-center">Cargando…</p>
-      </div>
+      <div id="procsContainer"><p class="text-xs text-white/20 py-4 text-center">Cargando…</p></div>
       <p id="procHostWarning" class="hidden text-[10px] text-yellow-400/60 mt-2 text-center">
-        Solo procesos del contenedor · activa <code>--pid=host</code> en Coolify
+        Solo procesos del contenedor · activa <code>pid: host</code>
       </p>
     </div>
 
-    <!-- Docker Containers -->
-    <div class="card animate-fade-in" style="animation-delay:.45s">
+    <!-- Docker -->
+    <div class="card animate-fade-in" style="animation-delay:.48s">
       <span class="card-label">Docker</span>
       <div id="dockerContainer" class="mt-3">
-        <p class="text-xs text-white/20 py-4 text-center" id="dockerEmpty">Montando socket…</p>
+        <p class="text-xs text-white/20 py-4 text-center" id="dockerEmpty">Cargando…</p>
       </div>
     </div>
 
-    <!-- Services / Links -->
+    <!-- Services -->
     <div class="card animate-fade-in" style="animation-delay:.5s">
       <div class="flex items-center justify-between mb-4">
         <span class="card-label">Servicios</span>
@@ -348,11 +422,13 @@
     </div>
   </section>
 
-  <!-- ── SYSTEM INFO BAR ── -->
+  <!-- SYSTEM INFO BAR -->
   <section class="card animate-fade-in flex flex-wrap gap-x-6 gap-y-2 items-center text-xs text-white/40 py-3 px-5"
            style="animation-delay:.55s">
     <span class="flex items-center gap-1.5">
-      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+      </svg>
       <span id="sysHostname" class="text-white/60 font-medium">--</span>
     </span>
     <span id="sysPlatform">--</span>
@@ -362,7 +438,7 @@
   </section>
 </main>
 
-<!-- ═══════════ RECONNECT OVERLAY ═══════════ -->
+<!-- RECONNECT OVERLAY -->
 <div class="overlay" id="overlay">
   <div class="text-center space-y-3">
     <div class="w-8 h-8 border-2 border-white/20 border-t-white/80 rounded-full mx-auto" style="animation:spin 1s linear infinite"></div>
@@ -371,7 +447,7 @@
   </div>
 </div>
 
-<!-- ═══════════ LINK MODAL ═══════════ -->
+<!-- LINK MODAL -->
 <div class="modal-bg" id="linkModal">
   <div class="modal-card">
     <h3 class="text-white font-semibold text-base mb-5" id="modalTitle">Añadir Servicio</h3>
@@ -406,17 +482,132 @@
   </div>
 </div>
 
-<!-- ═══════════ HISTORY MODAL ═══════════ -->
+<!-- SETTINGS MODAL -->
+<div class="modal-bg" id="settingsModal" onclick="if(event.target===this)closeSettings()">
+  <div class="modal-card" style="max-width:500px;max-height:90vh;overflow-y:auto">
+    <div class="flex items-center justify-between mb-5">
+      <h3 class="text-white font-semibold text-base">⚙️ Ajustes</h3>
+      <button onclick="closeSettings()" class="btn btn-ghost" style="padding:5px 10px;font-size:12px;">✕</button>
+    </div>
+
+    <!-- Telegram -->
+    <div>
+      <p class="card-label mb-3">Telegram</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[11px] text-white/40 mb-1 block">Bot Token</label>
+          <input class="input input-sm" id="sTgToken" placeholder="123456789:AAF...">
+        </div>
+        <div>
+          <label class="text-[11px] text-white/40 mb-1 block">Chat ID</label>
+          <input class="input input-sm" id="sTgChat" placeholder="-1001234567890 o tu user ID">
+        </div>
+        <button onclick="testTelegram()" class="btn btn-ghost w-full text-xs" style="padding:7px">
+          📨 Enviar mensaje de prueba
+        </button>
+        <p id="tgTestResult" class="text-[11px] text-center hidden"></p>
+      </div>
+    </div>
+
+    <!-- Alertas -->
+    <div class="setting-section">
+      <p class="card-label mb-3">Umbrales de alerta</p>
+      <p class="text-[11px] text-white/30 mb-3">La alerta se dispara solo si el valor supera el umbral durante los segundos indicados.</p>
+      <div class="space-y-3">
+        <div class="setting-row">
+          <span class="setting-label">CPU</span>
+          <div class="flex items-center gap-2 flex-1">
+            <input class="input input-sm" id="sAlCpuThr" type="number" placeholder="85" style="width:64px">
+            <span class="text-[11px] text-white/30">%  durante</span>
+            <input class="input input-sm" id="sAlCpuDur" type="number" placeholder="60" style="width:60px">
+            <span class="text-[11px] text-white/30">s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">RAM</span>
+          <div class="flex items-center gap-2 flex-1">
+            <input class="input input-sm" id="sAlRamThr" type="number" placeholder="90" style="width:64px">
+            <span class="text-[11px] text-white/30">%  durante</span>
+            <input class="input input-sm" id="sAlRamDur" type="number" placeholder="60" style="width:60px">
+            <span class="text-[11px] text-white/30">s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Temperatura</span>
+          <div class="flex items-center gap-2 flex-1">
+            <input class="input input-sm" id="sAlTempThr" type="number" placeholder="80" style="width:64px">
+            <span class="text-[11px] text-white/30">°C durante</span>
+            <input class="input input-sm" id="sAlTempDur" type="number" placeholder="30" style="width:60px">
+            <span class="text-[11px] text-white/30">s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Disco</span>
+          <div class="flex items-center gap-2 flex-1">
+            <input class="input input-sm" id="sAlDiskThr" type="number" placeholder="90" style="width:64px">
+            <span class="text-[11px] text-white/30">%  durante</span>
+            <input class="input input-sm" id="sAlDiskDur" type="number" placeholder="300" style="width:60px">
+            <span class="text-[11px] text-white/30">s</span>
+          </div>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">Cooldown</span>
+          <div class="flex items-center gap-2 flex-1">
+            <input class="input input-sm" id="sAlCooldown" type="number" placeholder="30" style="width:64px">
+            <span class="text-[11px] text-white/30">min entre repeticiones</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ping hosts -->
+    <div class="setting-section">
+      <p class="card-label mb-3">Hosts de latencia</p>
+      <textarea class="input" id="sPingHosts" rows="3"
+                placeholder="1.1.1.1&#10;8.8.8.8&#10;192.168.1.1"
+                style="resize:vertical;font-family:monospace;font-size:12px"></textarea>
+      <p class="text-[11px] text-white/30 mt-1">Un host por línea</p>
+    </div>
+
+    <!-- AdGuard -->
+    <div class="setting-section">
+      <p class="card-label mb-3">AdGuard Home</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-[11px] text-white/40 mb-1 block">URL</label>
+          <input class="input input-sm" id="sAgUrl" placeholder="http://192.168.1.100:3000">
+        </div>
+        <div class="flex gap-2">
+          <div class="flex-1">
+            <label class="text-[11px] text-white/40 mb-1 block">Usuario</label>
+            <input class="input input-sm" id="sAgUser" placeholder="admin">
+          </div>
+          <div class="flex-1">
+            <label class="text-[11px] text-white/40 mb-1 block">Contraseña</label>
+            <input class="input input-sm" id="sAgPass" type="password" placeholder="••••••••">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex gap-3 mt-6">
+      <button class="btn btn-primary flex-1" onclick="saveSettings()">Guardar</button>
+      <button class="btn btn-ghost" onclick="closeSettings()">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY MODAL -->
 <div class="modal-bg" id="histModal" onclick="if(event.target===this)closeHistory()">
-  <div class="hist-modal-card">
+  <div class="hist-card">
     <div class="flex items-center justify-between mb-4">
       <h3 class="text-white font-semibold text-base" id="histTitle">Historial</h3>
       <button onclick="closeHistory()" class="btn btn-ghost" style="padding:5px 10px;font-size:12px;">✕</button>
     </div>
     <div class="flex gap-2 mb-4">
-      <button class="hist-tab active" id="h1btn"  onclick="loadHistory(1)">1h</button>
-      <button class="hist-tab"        id="h6btn"  onclick="loadHistory(6)">6h</button>
-      <button class="hist-tab"        id="h24btn" onclick="loadHistory(24)">24h</button>
+      <button class="tab-btn active" id="h1btn"  onclick="loadHistory(1)">1h</button>
+      <button class="tab-btn"        id="h6btn"  onclick="loadHistory(6)">6h</button>
+      <button class="tab-btn"        id="h24btn" onclick="loadHistory(24)">24h</button>
     </div>
     <canvas id="histCanvas" style="width:100%;height:200px;display:block;border-radius:8px;"></canvas>
     <p class="text-[11px] text-white/25 mt-2 text-center" id="histMeta">--</p>
@@ -424,57 +615,35 @@
 </div>
 
 <script>
-// ══════════════════════════════════════════════════════
-// CONFIG & STATE
-// ══════════════════════════════════════════════════════
-const CIRC  = 326.73;
-const DCIRC = 213.63;
-const MAX_HISTORY = 60;
-
+// ══ STATE ══════════════════════════════════════════
+const CIRC = 326.73;
+const MAX_HIST = 60;
 const EMOJIS = ["🌐","🖥️","🎬","📦","🏠","📊","🔒","💾","📁","⚙️","🎮","📷","🔧","📝","🗄️","🐳","📡","🎵","📧","🛡️"];
 const COLORS = ["#3b82f6","#10b981","#f59e0b","#8b5cf6","#ec4899","#06b6d4","#ef4444","#f97316","#84cc16","#14b8a6"];
 
 const history = { cpu:[], ram:[], temp:[], load:[], netDown:[], diskRead:[] };
 const peaks   = { cpu:0, temp:0 };
-let sysInfo    = null;
-let ws         = null;
-let retries    = 0;
-let links      = [];
-let procSort   = "cpu";
-let currentInterval = 2;
-let lastMsgTs  = null;
+let sysInfo    = null, ws = null, retries = 0, links = [], procSort = "cpu";
+let currentInterval = 2, lastMsgTs = null;
+let selectedEmoji = "🔗", selectedColor = COLORS[0];
+let histMetric = "cpu", histLabel = "CPU %", histColor = "#3b82f6", histHours = 1;
 
-let selectedEmoji = "🔗";
-let selectedColor = COLORS[0];
-
-// history modal state
-let histMetric = "cpu";
-let histLabel  = "CPU %";
-let histColor  = "#3b82f6";
-let histHours  = 1;
-
-// ══════════════════════════════════════════════════════
-// WEBSOCKET
-// ══════════════════════════════════════════════════════
+// ══ WEBSOCKET ══════════════════════════════════════
 function connect() {
   const proto = location.protocol === "https:" ? "wss" : "ws";
   ws = new WebSocket(`${proto}://${location.host}/ws`);
-
   ws.onopen = () => {
     retries = 0;
     document.getElementById("overlay").classList.remove("show");
     document.getElementById("statusDot").className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse-dot";
     document.getElementById("statusText").textContent = "conectado en tiempo real";
-    // restore interval preference
     if (currentInterval !== 2) ws.send(JSON.stringify({cmd:"set_interval", secs:currentInterval}));
   };
-
-  ws.onmessage = (e) => {
+  ws.onmessage = e => {
     const d = JSON.parse(e.data);
     if (d.type === "info")    handleInfo(d);
     if (d.type === "metrics") handleMetrics(d);
   };
-
   ws.onclose = () => {
     document.getElementById("statusDot").className = "w-2.5 h-2.5 rounded-full bg-red-400 animate-pulse-dot";
     document.getElementById("statusText").textContent = "desconectado";
@@ -484,26 +653,19 @@ function connect() {
     document.getElementById("retryText").textContent = `Intento ${retries} · reintentando en ${Math.round(delay/1000)}s`;
     setTimeout(connect, delay);
   };
-
   ws.onerror = () => ws.close();
 }
 
 function setIntervalSecs(n) {
   currentInterval = n;
-  ["1","2","5"].forEach(v => {
-    document.getElementById(`itvBtn${v}`).classList.toggle("active", String(n) === v);
-  });
-  if (ws && ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({cmd:"set_interval", secs:n}));
-  }
+  ["1","2","5"].forEach(v => document.getElementById(`itvBtn${v}`).classList.toggle("active", String(n) === v));
+  if (ws && ws.readyState === 1) ws.send(JSON.stringify({cmd:"set_interval", secs:n}));
 }
 
-// ══════════════════════════════════════════════════════
-// HANDLERS
-// ══════════════════════════════════════════════════════
+// ══ HANDLERS ═══════════════════════════════════════
 function handleInfo(d) {
   sysInfo = d;
-  const el = (id, txt) => document.getElementById(id).textContent = txt;
+  const el = (id,t) => document.getElementById(id).textContent = t;
   el("sysHostname", d.hostname);
   el("sysPlatform", d.platform);
   el("sysCpu", `${d.cpu_physical}C / ${d.cpu_count}T` + (d.cpu_freq_mhz ? ` @ ${d.cpu_freq_mhz} MHz` : ""));
@@ -515,69 +677,76 @@ function handleMetrics(d) {
   lastMsgTs = Date.now();
   document.getElementById("lastUpdateBadge").style.display = "";
 
-  // ── Gauge colors (threshold-aware) ──
-  const cpuColor  = thresholdColor(d.cpu,  [[90,"#ef4444"],[80,"#f97316"]],"#3b82f6");
-  const ramColor  = thresholdColor(d.ram_pct, [[90,"#ef4444"],[80,"#f97316"]],"#10b981");
-  const tempColor = thresholdColor(d.temp, [[80,"#ef4444"],[70,"#f97316"]],"#f59e0b");
+  // Threshold colors
+  const cpuC  = threshColor(d.cpu,     [[90,"#ef4444"],[80,"#f97316"]], "#3b82f6");
+  const ramC  = threshColor(d.ram_pct, [[90,"#ef4444"],[80,"#f97316"]], "#10b981");
+  const tempC = threshColor(d.temp,    [[80,"#ef4444"],[70,"#f97316"]], "#f59e0b");
 
-  updateGauge("cpuGauge",  "cpuVal",  d.cpu,         100, cpuColor);
-  updateGauge("ramGauge",  "ramVal",  d.ram_used_gb, sysInfo ? sysInfo.ram_total_gb : 16, ramColor);
-  updateGauge("tempGauge", "tempVal", d.temp,        100, tempColor);
-
-  // card glow on alert
-  setCardAlert("cpuCard",  d.cpu,    90, 80);
+  updateGauge("cpuGauge",  "cpuVal",  d.cpu,         100, cpuC);
+  updateGauge("ramGauge",  "ramVal",  d.ram_used_gb, sysInfo?.ram_total_gb || 16, ramC);
+  updateGauge("tempGauge", "tempVal", d.temp,        100, tempC);
+  setCardAlert("cpuCard",  d.cpu,     90, 80);
   setCardAlert("ramCard",  d.ram_pct, 90, 80);
-  setCardAlert("tempCard", d.temp,   80, 70);
+  setCardAlert("tempCard", d.temp,    80, 70);
 
-  // Load gauge
-  const cpuCount = sysInfo ? sysInfo.cpu_count : 4;
-  const load1 = d.load_avg ? d.load_avg[0] : null;
+  const cpuCount = sysInfo?.cpu_count || 4;
+  const load1 = d.load_avg?.[0] ?? null;
   if (load1 != null) {
-    const loadPct = Math.min(load1 / cpuCount, 1);
-    document.getElementById("loadGauge").style.strokeDashoffset = CIRC * (1 - loadPct);
+    document.getElementById("loadGauge").style.strokeDashoffset = CIRC * (1 - Math.min(load1 / cpuCount, 1));
     document.getElementById("loadVal").textContent = load1.toFixed(2);
     document.getElementById("loadSub").textContent = `5m ${d.load_avg[1]} · 15m ${d.load_avg[2]}`;
   }
 
   if (sysInfo) document.getElementById("ramInfo").textContent = `${d.ram_used_gb} / ${sysInfo.ram_total_gb} GB`;
 
-  if (d.swap_used_gb != null && sysInfo && sysInfo.swap_total_gb != null)
+  // RAM breakdown
+  if (sysInfo && d.ram_used_gb != null) {
+    const total = sysInfo.ram_total_gb || 1;
+    document.getElementById("ramBreakUsed").textContent  = d.ram_used_gb + " GB";
+    document.getElementById("ramBreakCache").textContent = (d.ram_cached_gb || 0) + " GB";
+    document.getElementById("ramBreakFree").textContent  = (d.ram_available_gb || 0) + " GB";
+    document.getElementById("ramBarUsed").style.width   = (d.ram_used_gb  / total * 100) + "%";
+    document.getElementById("ramBarCache").style.width  = ((d.ram_cached_gb || 0) / total * 100) + "%";
+  }
+
+  if (d.swap_used_gb != null && sysInfo?.swap_total_gb)
     document.getElementById("swapText").textContent = `Swap: ${d.swap_used_gb} / ${sysInfo.swap_total_gb} GB`;
 
+  // Power
+  if (d.power != null) {
+    document.getElementById("powerBadge").style.display = "";
+    document.getElementById("powerVal").textContent = d.power + " W";
+  }
+
   // Peaks
-  if (d.cpu  != null && d.cpu  > peaks.cpu)  peaks.cpu  = d.cpu;
+  if (d.cpu != null && d.cpu > peaks.cpu)   peaks.cpu  = d.cpu;
   if (d.temp != null && d.temp > peaks.temp) peaks.temp = d.temp;
   document.getElementById("cpuPeak").textContent  = `peak ${peaks.cpu}%`;
   document.getElementById("tempPeak").textContent = peaks.temp ? `peak ${peaks.temp}°C` : "peak --";
 
-  // History & Sparklines
-  pushHistory("cpu",      d.cpu      ?? 0);
-  pushHistory("ram",      d.ram_pct  ?? 0);
-  pushHistory("temp",     d.temp     ?? 0);
-  pushHistory("load",     load1      ?? 0);
-  pushHistory("netDown",  d.net ? d.net.down_kbps : 0);
-  pushHistory("diskRead", d.disk_io  ? d.disk_io.read_mbps : 0);
+  // History
+  pushH("cpu",      d.cpu      ?? 0);
+  pushH("ram",      d.ram_pct  ?? 0);
+  pushH("temp",     d.temp     ?? 0);
+  pushH("load",     load1      ?? 0);
+  pushH("netDown",  d.net?.down_kbps    || 0);
+  pushH("diskRead", d.disk_io?.read_mbps || 0);
 
-  drawSparkline("cpuSpark",      history.cpu,      cpuColor,   100);
-  drawSparkline("ramSpark",      history.ram,      ramColor,   100);
-  drawSparkline("tempSpark",     history.temp,     tempColor,  100);
-  drawSparkline("loadSpark",     history.load,     "#f97316",  null);
-  drawSparkline("netSpark",      history.netDown,  "#06b6d4",  null);
-  drawSparkline("diskReadSpark", history.diskRead, "#ec4899",  null);
+  drawSpark("cpuSpark",      history.cpu,      cpuC,     100);
+  drawSpark("ramSpark",      history.ram,      ramC,     100);
+  drawSpark("tempSpark",     history.temp,     tempC,    100);
+  drawSpark("loadSpark",     history.load,     "#f97316", null);
+  drawSpark("netSpark",      history.netDown,  "#06b6d4", null);
+  drawSpark("diskReadSpark", history.diskRead, "#ec4899", null);
 
-  // Per-core CPU + temps
-  updateCores(d.cpu_per_core, d.cpu_temps);
-
-  // Disks
+  updateCores(d.cpu_per_core, d.cpu_temps, d.cpu_freqs);
   updateDisks(d.disks, d.disk_pct, d.disk_used_gb);
 
-  // Disk I/O
   if (d.disk_io) {
     document.getElementById("diskReadVal").textContent  = fmtMBps(d.disk_io.read_mbps);
     document.getElementById("diskWriteVal").textContent = fmtMBps(d.disk_io.write_mbps);
   }
 
-  // Network
   if (d.net) {
     document.getElementById("netUp").textContent        = fmtSpeed(d.net.up_kbps);
     document.getElementById("netDown").textContent      = fmtSpeed(d.net.down_kbps);
@@ -586,156 +755,142 @@ function handleMetrics(d) {
   }
   updateNetIfaces(d.net_ifaces);
 
-  // Processes
   if (d.proc_count != null) {
     document.getElementById("procBadge").style.display = "";
     document.getElementById("procCount").textContent = d.proc_count;
-    // show warning if very few processes (container namespace)
-    const warn = document.getElementById("procHostWarning");
-    warn.classList.toggle("hidden", d.proc_count > 10);
+    document.getElementById("procHostWarning").classList.toggle("hidden", d.proc_count > 10);
   }
-  const procs = procSort === "cpu"
-    ? (d.top_procs_cpu || d.top_procs || [])
-    : (d.top_procs_ram || d.top_procs || []);
+  const procs = procSort === "cpu" ? (d.top_procs_cpu || []) : (d.top_procs_ram || []);
   updateProcs(procs);
 
-  // Docker
   updateDocker(d.docker || []);
+  updatePing(d.ping   || []);
+  updateAdGuard(d.adguard);
+  updateAlerts(d.active_alerts || []);
 
-  // Uptime
   if (d.uptime_s != null) {
     document.getElementById("uptimeBadge").style.display = "";
     document.getElementById("uptimeText").textContent = fmtUptime(d.uptime_s);
   }
+
+  // Health checks (async, separate)
+  refreshHealth();
 }
 
-// ══════════════════════════════════════════════════════
-// UI HELPERS
-// ══════════════════════════════════════════════════════
-function thresholdColor(value, thresholds, defaultColor) {
-  if (value == null) return defaultColor;
-  for (const [limit, color] of thresholds) {
-    if (value >= limit) return color;
-  }
-  return defaultColor;
+// ══ UI HELPERS ════════════════════════════════════
+function threshColor(v, thresholds, def) {
+  if (v == null) return def;
+  for (const [lim, col] of thresholds) if (v >= lim) return col;
+  return def;
 }
 
-function setCardAlert(cardId, value, criticalThreshold, warnThreshold) {
-  const el = document.getElementById(cardId);
-  if (!el || value == null) return;
-  el.classList.toggle("alert-glow", value >= criticalThreshold);
-  el.classList.toggle("warn-glow",  value >= warnThreshold && value < criticalThreshold);
+function setCardAlert(id, v, crit, warn) {
+  const el = document.getElementById(id);
+  if (!el || v == null) return;
+  el.classList.toggle("alert-glow", v >= crit);
+  el.classList.toggle("warn-glow",  v >= warn && v < crit);
 }
 
 function updateGauge(ringId, textId, value, max, color) {
   const v = value ?? 0;
-  const pct = Math.min(v / max, 1);
   const el = document.getElementById(ringId);
-  el.style.strokeDashoffset = CIRC * (1 - pct);
+  el.style.strokeDashoffset = CIRC * (1 - Math.min(v / max, 1));
   if (color) el.setAttribute("stroke", color);
   document.getElementById(textId).textContent =
     value != null ? (Number.isInteger(v) ? v : v.toFixed(1)) : "--";
 }
 
-function pushHistory(key, val) {
+function pushH(key, val) {
   history[key].push(val);
-  if (history[key].length > MAX_HISTORY) history[key].shift();
+  if (history[key].length > MAX_HIST) history[key].shift();
 }
 
-function updateCores(cores, temps) {
+function updateCores(cores, temps, freqs) {
   if (!cores) return;
-  const container = document.getElementById("coresContainer");
-  if (container.children.length !== cores.length) {
-    container.innerHTML = "";
+  const c = document.getElementById("coresContainer");
+  if (c.children.length !== cores.length) {
+    c.innerHTML = "";
     cores.forEach((_, i) => {
       const row = document.createElement("div");
-      row.className = "flex items-center gap-2";
+      row.className = "flex items-center gap-1.5";
       row.innerHTML = `
-        <span class="text-[10px] text-white/30 w-4 text-right shrink-0">${i}</span>
+        <span class="text-[10px] text-white/25 w-4 text-right shrink-0">${i}</span>
         <div class="bar-bg flex-1"><div class="bar-fill" id="core${i}" style="width:0%"></div></div>
-        <span class="text-[10px] text-white/50 w-8 text-right font-mono" id="coreT${i}">0%</span>
-        <span class="text-[10px] w-10 text-right shrink-0" id="coreTemp${i}" style="color:rgba(255,255,255,.2)">--</span>`;
-      container.appendChild(row);
+        <span class="text-[10px] text-white/45 w-8 text-right font-mono shrink-0" id="coreT${i}">0%</span>
+        <span class="text-[10px] w-12 text-right shrink-0 font-mono" id="coreFreq${i}" style="color:rgba(255,255,255,.2)">--</span>
+        <span class="text-[10px] w-9 text-right shrink-0" id="coreTmp${i}" style="color:rgba(255,255,255,.2)">--</span>`;
+      c.appendChild(row);
     });
   }
   cores.forEach((pct, i) => {
     const bar = document.getElementById(`core${i}`);
-    const txt = document.getElementById(`coreT${i}`);
-    const tempEl = document.getElementById(`coreTemp${i}`);
     if (!bar) return;
     bar.style.width = pct + "%";
-    const hue = 210 - (pct / 100) * 180;
-    bar.style.background = `hsl(${Math.max(hue, 0)}, 80%, 55%)`;
-    txt.textContent = pct + "%";
-    if (tempEl && temps && temps[i] != null) {
+    bar.style.background = `hsl(${Math.max(210 - pct * 1.8, 0)}, 80%, 55%)`;
+    document.getElementById(`coreT${i}`).textContent = pct + "%";
+
+    const fEl = document.getElementById(`coreFreq${i}`);
+    if (fEl && freqs?.[i] != null) fEl.textContent = freqs[i] + "M";
+
+    const tEl = document.getElementById(`coreTmp${i}`);
+    if (tEl && temps?.[i] != null) {
       const t = temps[i];
-      tempEl.textContent = t + "°";
-      tempEl.style.color = t >= 80 ? "#ef4444" : t >= 70 ? "#f97316" : "rgba(255,255,255,.3)";
+      tEl.textContent = t + "°";
+      tEl.style.color = t >= 80 ? "#ef4444" : t >= 70 ? "#f97316" : "rgba(255,255,255,.3)";
     }
   });
 }
 
 function updateDisks(disks, rootPct, rootUsed) {
-  const container = document.getElementById("disksContainer");
-  // fallback to single root disk if no multi-disk data
+  const c = document.getElementById("disksContainer");
   const list = (disks && disks.length) ? disks : (rootPct != null ? [{
-    mount: "/", device: "root",
-    total_gb: sysInfo ? sysInfo.disk_total_gb : 0,
-    used_gb: rootUsed || 0,
-    pct: rootPct
+    mount:"/", device:"root",
+    total_gb: sysInfo?.disk_total_gb || 0,
+    used_gb: rootUsed || 0, pct: rootPct
   }] : []);
   if (!list.length) return;
-  container.innerHTML = list.map(d => {
-    const barColor = d.pct >= 90 ? "#ef4444" : d.pct >= 80 ? "#f97316" : "#ec4899";
-    return `
-      <div class="disk-row">
-        <div class="flex items-center justify-between mb-1">
-          <div>
-            <span class="text-xs text-white/70 font-medium">${d.mount}</span>
-            <span class="text-[10px] text-white/30 ml-2">${d.device}</span>
-          </div>
-          <div class="text-right">
-            <span class="text-xs text-white/60">${d.used_gb} / ${d.total_gb} GB</span>
-            <span class="text-[10px] ml-2 font-semibold" style="color:${barColor}">${d.pct}%</span>
-          </div>
+  c.innerHTML = list.map(d => {
+    const col = d.pct >= 90 ? "#ef4444" : d.pct >= 80 ? "#f97316" : "#ec4899";
+    return `<div class="disk-row">
+      <div class="flex items-center justify-between mb-1">
+        <div><span class="text-xs text-white/70 font-medium">${d.mount}</span>
+          <span class="text-[10px] text-white/25 ml-1.5">${d.device}</span></div>
+        <div class="text-right">
+          <span class="text-xs text-white/55">${d.used_gb} / ${d.total_gb} GB</span>
+          <span class="text-[10px] ml-2 font-semibold" style="color:${col}">${d.pct}%</span>
         </div>
-        <div class="bar-bg">
-          <div class="bar-fill" style="width:${d.pct}%;background:${barColor}"></div>
-        </div>
-      </div>`;
+      </div>
+      <div class="bar-bg"><div class="bar-fill" style="width:${d.pct}%;background:${col}"></div></div>
+    </div>`;
   }).join("");
 }
 
 function updateNetIfaces(ifaces) {
-  if (!ifaces || !ifaces.length) return;
-  const container = document.getElementById("ifaceContainer");
-  container.innerHTML = ifaces.map(f => `
+  if (!ifaces?.length) return;
+  document.getElementById("ifaceContainer").innerHTML = ifaces.map(f => `
     <div class="iface-row">
       <span class="text-white/40 font-mono w-20 truncate">${f.iface}</span>
-      <span class="text-white/50">↑ ${fmtSpeed(f.up_kbps)}</span>
-      <span class="text-white/50">↓ ${fmtSpeed(f.down_kbps)}</span>
+      <span class="text-white/45">↑ ${fmtSpeed(f.up_kbps)}</span>
+      <span class="text-white/45">↓ ${fmtSpeed(f.down_kbps)}</span>
     </div>`).join("");
 }
 
 function updateProcs(procs) {
-  if (!procs || !procs.length) return;
+  if (!procs?.length) return;
   const sortVal = procSort === "cpu" ? "cpu" : "ram";
-  const maxVal  = Math.max(...procs.map(p => p[sortVal]), 0.1);
-  const container = document.getElementById("procsContainer");
-  container.innerHTML = procs.map(p => {
-    const val  = p[sortVal];
-    const pct  = Math.min(val / maxVal * 100, 100);
-    const color = val > 50 ? "#f97316" : "#3b82f6";
-    return `
-      <div class="proc-row">
-        <span class="text-[10px] text-white/25 w-10 text-right pr-2 shrink-0 font-mono">${p.pid || "--"}</span>
-        <div class="flex-1 min-w-0 px-1">
-          <div class="text-xs text-white/70 truncate">${p.name}</div>
-          <div class="proc-minibar mt-0.5" style="width:${pct}%;background:${color};opacity:.6"></div>
-        </div>
-        <span class="w-14 text-right text-xs font-mono ${p.cpu > 50 ? 'text-orange-400' : 'text-white/50'}">${p.cpu}%</span>
-        <span class="w-14 text-right text-xs font-mono text-white/35">${p.ram}%</span>
-      </div>`;
+  const maxV = Math.max(...procs.map(p => p[sortVal]), 0.1);
+  document.getElementById("procsContainer").innerHTML = procs.map(p => {
+    const v = p[sortVal], pct = Math.min(v / maxV * 100, 100);
+    const col = v > 50 ? "#f97316" : "#3b82f6";
+    return `<div class="proc-row">
+      <span class="text-[10px] text-white/25 w-10 text-right pr-2 shrink-0 font-mono">${p.pid||"--"}</span>
+      <div class="flex-1 min-w-0 px-1">
+        <div class="text-xs text-white/70 truncate">${p.name}</div>
+        <div class="proc-mini mt-0.5" style="width:${pct}%;background:${col};opacity:.6"></div>
+      </div>
+      <span class="w-14 text-right text-xs font-mono ${p.cpu > 50 ? 'text-orange-400' : 'text-white/45'}">${p.cpu}%</span>
+      <span class="w-14 text-right text-xs font-mono text-white/30">${p.ram}%</span>
+    </div>`;
   }).join("");
 }
 
@@ -746,315 +901,370 @@ function setProcSort(by) {
 }
 
 function updateDocker(containers) {
-  const container = document.getElementById("dockerContainer");
+  const c = document.getElementById("dockerContainer");
   const empty = document.getElementById("dockerEmpty");
-  if (!containers || !containers.length) {
-    empty.textContent = "Docker no disponible · monta /var/run/docker.sock";
+  if (!containers.length) {
+    if (empty) empty.textContent = "Docker no disponible";
     return;
   }
-  empty.style.display = "none";
-  const statusColor = s => ({running:"#10b981", exited:"#ef4444", paused:"#f59e0b", restarting:"#f97316"}[s] || "#6b7280");
-  container.innerHTML = containers.map(c => `
+  if (empty) empty.style.display = "none";
+  const col = s => ({running:"#10b981", exited:"#ef4444", paused:"#f59e0b", restarting:"#f97316"}[s] || "#6b7280");
+  c.innerHTML = containers.map(c => `
     <div class="docker-item">
-      <div class="status-dot" style="background:${statusColor(c.status)}"></div>
+      <div class="status-dot" style="background:${col(c.status)}"></div>
       <div class="flex-1 min-w-0">
         <div class="text-xs text-white/80 truncate font-medium">${c.name}</div>
         <div class="text-[10px] text-white/30 truncate">${c.image}</div>
       </div>
       <span class="text-[10px] shrink-0 px-1.5 py-0.5 rounded-full font-medium"
-            style="background:${statusColor(c.status)}22;color:${statusColor(c.status)}">${c.status}</span>
+            style="background:${col(c.status)}22;color:${col(c.status)}">${c.status}</span>
     </div>`).join("");
 }
 
-// ══════════════════════════════════════════════════════
-// SPARKLINE DRAWING
-// ══════════════════════════════════════════════════════
-function drawSparkline(canvasId, data, hexColor, fixedMax) {
+function updatePing(pings) {
+  const c = document.getElementById("pingContainer");
+  if (!pings.length) {
+    c.innerHTML = '<p class="text-xs text-white/20 text-center py-2">Configurar hosts en ⚙️</p>';
+    return;
+  }
+  c.innerHTML = pings.map(p => {
+    const color = !p.ok ? "#ef4444" : p.ms < 20 ? "#10b981" : p.ms < 80 ? "#f59e0b" : "#f97316";
+    const bar = p.ok ? Math.min(p.ms / 200 * 100, 100) : 100;
+    return `<div class="ping-row">
+      <span class="text-white/50 font-mono w-28 truncate">${p.host}</span>
+      <div class="flex-1 mx-3">
+        <div class="bar-sm"><div class="bar-fill" style="width:${bar}%;background:${color}"></div></div>
+      </div>
+      <span class="font-mono font-semibold text-xs shrink-0" style="color:${color}">
+        ${p.ok ? p.ms + " ms" : "timeout"}
+      </span>
+    </div>`;
+  }).join("");
+}
+
+function updateAdGuard(ag) {
+  const card = document.getElementById("adguardCard");
+  if (!ag) { card.style.display = "none"; return; }
+  card.style.display = "";
+  document.getElementById("agQueries").textContent = ag.queries.toLocaleString();
+  document.getElementById("agBlocked").textContent = ag.blocked.toLocaleString();
+  document.getElementById("agPct").textContent     = ag.blocked_pct + "%";
+  document.getElementById("agMs").textContent      = ag.avg_ms + " ms";
+}
+
+function updateAlerts(alerts) {
+  const bell = document.getElementById("alertBell");
+  const count = document.getElementById("alertCount");
+  if (!alerts.length) { bell.classList.add("hidden"); return; }
+  bell.classList.remove("hidden");
+  count.textContent = alerts.length;
+}
+
+function toggleAlertPanel() {
+  // simple: show alert state in a toast
+}
+
+// ══ HEALTH CHECKS ════════════════════════════════
+let _lastHealthFetch = 0;
+async function refreshHealth() {
+  if (Date.now() - _lastHealthFetch < 30000) return;
+  _lastHealthFetch = Date.now();
+  try {
+    const res = await fetch("/api/health");
+    const data = await res.json();
+    Object.entries(data).forEach(([id, status]) => {
+      const dot = document.getElementById(`hd-${id}`);
+      if (dot) {
+        dot.style.background = status === "up" ? "#10b981" : "#ef4444";
+        dot.title = status === "up" ? "Accesible" : "No responde";
+      }
+    });
+  } catch(e) {}
+}
+
+// ══ SPARKLINES ═══════════════════════════════════
+function drawSpark(canvasId, data, color, fixedMax) {
   const canvas = document.getElementById(canvasId);
   if (!canvas) return;
-  const dpr  = window.devicePixelRatio || 1;
+  const dpr = window.devicePixelRatio || 1;
   const rect = canvas.getBoundingClientRect();
   if (canvas.width !== rect.width * dpr || canvas.height !== rect.height * dpr) {
-    canvas.width  = rect.width  * dpr;
+    canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
   }
   const ctx = canvas.getContext("2d");
   const w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   if (data.length < 2) return;
-
-  const max  = fixedMax || Math.max(...data, 0.1);
-  const padY = h * 0.08;
-  const pts  = data.map((v, i) => ({
+  const max = fixedMax || Math.max(...data, 0.1);
+  const padY = h * .08;
+  const pts = data.map((v, i) => ({
     x: (i / (data.length - 1)) * w,
     y: h - padY - (v / max) * (h - padY * 2)
   }));
-
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, hexColor + "35");
-  grad.addColorStop(1, hexColor + "00");
+  grad.addColorStop(0, color + "35"); grad.addColorStop(1, color + "00");
   ctx.beginPath();
-  ctx.moveTo(pts[0].x, h);
-  ctx.lineTo(pts[0].x, pts[0].y);
+  ctx.moveTo(pts[0].x, h); ctx.lineTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) {
     const xm = (pts[i-1].x + pts[i].x) / 2;
     ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y + pts[i].y) / 2);
   }
   ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
-  ctx.lineTo(w, h);
-  ctx.closePath();
-  ctx.fillStyle = grad;
-  ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y);
+  ctx.lineTo(w, h); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) {
     const xm = (pts[i-1].x + pts[i].x) / 2;
     ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y + pts[i].y) / 2);
   }
   ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
-  ctx.strokeStyle = hexColor;
-  ctx.lineWidth   = 1.5 * dpr;
-  ctx.lineJoin    = "round";
-  ctx.stroke();
-
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5 * dpr; ctx.lineJoin = "round"; ctx.stroke();
   const last = pts[pts.length - 1];
-  ctx.beginPath();
-  ctx.arc(last.x, last.y, 2.5 * dpr, 0, Math.PI * 2);
-  ctx.fillStyle = hexColor;
-  ctx.fill();
+  ctx.beginPath(); ctx.arc(last.x, last.y, 2.5 * dpr, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
 }
 
-// ══════════════════════════════════════════════════════
-// HISTORY MODAL
-// ══════════════════════════════════════════════════════
+// ══ HISTORY MODAL ════════════════════════════════
 function openHistory(metric, label, color) {
-  histMetric = metric;
-  histLabel  = label;
-  histColor  = color;
-  histHours  = 1;
+  histMetric = metric; histLabel = label; histColor = color; histHours = 1;
   document.getElementById("histTitle").textContent = label;
-  ["h1btn","h6btn","h24btn"].forEach(id =>
-    document.getElementById(id).classList.remove("active")
-  );
+  ["h1btn","h6btn","h24btn"].forEach(id => document.getElementById(id).classList.remove("active"));
   document.getElementById("h1btn").classList.add("active");
   document.getElementById("histModal").classList.add("show");
   loadHistory(1);
 }
-
-function closeHistory() {
-  document.getElementById("histModal").classList.remove("show");
-}
+function closeHistory() { document.getElementById("histModal").classList.remove("show"); }
 
 async function loadHistory(hours) {
   histHours = hours;
-  ["h1btn","h6btn","h24btn"].forEach(id =>
-    document.getElementById(id).classList.remove("active")
-  );
+  ["h1btn","h6btn","h24btn"].forEach(id => document.getElementById(id).classList.remove("active"));
   document.getElementById(`h${hours}btn`).classList.add("active");
   try {
     const res  = await fetch(`/api/history?metric=${histMetric}&hours=${hours}`);
     const data = await res.json();
-    if (!data.length) {
-      document.getElementById("histMeta").textContent = "Sin datos para este rango";
-      return;
-    }
-    const values = data.map(r => r.v ?? 0);
-    const minV   = Math.min(...values).toFixed(1);
-    const maxV   = Math.max(...values).toFixed(1);
-    const avgV   = (values.reduce((a,b)=>a+b,0)/values.length).toFixed(1);
+    if (!data.length) { document.getElementById("histMeta").textContent = "Sin datos"; return; }
+    const vals = data.map(r => r.v ?? 0);
+    const min = Math.min(...vals).toFixed(1), max = Math.max(...vals).toFixed(1);
+    const avg = (vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(1);
     document.getElementById("histMeta").textContent =
-      `${data.length} muestras · mín ${minV} · máx ${maxV} · avg ${avgV}`;
-    drawHistoryChart(data, histColor);
+      `${data.length} muestras · mín ${min} · máx ${max} · avg ${avg}`;
+    drawHistChart(data, histColor);
   } catch(e) {
     document.getElementById("histMeta").textContent = "Error cargando historial";
   }
 }
 
-function drawHistoryChart(data, hexColor) {
+function drawHistChart(data, color) {
   const canvas = document.getElementById("histCanvas");
-  const dpr    = window.devicePixelRatio || 1;
-  const rect   = canvas.getBoundingClientRect();
-  canvas.width  = rect.width  * dpr;
-  canvas.height = rect.height * dpr;
-  const ctx = canvas.getContext("2d");
-  const w = canvas.width, h = canvas.height;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * dpr; canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext("2d"), w = canvas.width, h = canvas.height;
   ctx.clearRect(0, 0, w, h);
   if (data.length < 2) return;
-
-  const values = data.map(r => r.v ?? 0);
-  const maxV   = Math.max(...values, 0.1);
-  const padX = 8 * dpr, padY = 16 * dpr;
+  const vals = data.map(r => r.v ?? 0);
+  const maxV = Math.max(...vals, 0.1);
+  const padX = 8*dpr, padY = 16*dpr;
   const pts = data.map((r, i) => ({
-    x: padX + (i / (data.length - 1)) * (w - padX * 2),
-    y: padY + (1 - (r.v ?? 0) / maxV) * (h - padY * 2)
+    x: padX + (i / (data.length - 1)) * (w - padX*2),
+    y: padY + (1 - (r.v ?? 0) / maxV) * (h - padY*2)
   }));
-
-  // grid lines
-  ctx.strokeStyle = "rgba(255,255,255,.05)";
-  ctx.lineWidth = 1;
-  [0.25, 0.5, 0.75].forEach(f => {
-    const y = padY + f * (h - padY * 2);
-    ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w - padX, y); ctx.stroke();
+  ctx.strokeStyle = "rgba(255,255,255,.05)"; ctx.lineWidth = 1;
+  [.25,.5,.75].forEach(f => {
+    const y = padY + f*(h-padY*2);
+    ctx.beginPath(); ctx.moveTo(padX, y); ctx.lineTo(w-padX, y); ctx.stroke();
     ctx.fillStyle = "rgba(255,255,255,.2)";
-    ctx.font = `${9*dpr}px Inter, sans-serif`;
-    ctx.fillText((maxV * (1 - f)).toFixed(1), 0, y + 3*dpr);
+    ctx.font = `${9*dpr}px Inter,sans-serif`;
+    ctx.fillText((maxV*(1-f)).toFixed(1), 0, y+3*dpr);
   });
-
   const grad = ctx.createLinearGradient(0, 0, 0, h);
-  grad.addColorStop(0, hexColor + "40");
-  grad.addColorStop(1, hexColor + "00");
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, h);
-  ctx.lineTo(pts[0].x, pts[0].y);
+  grad.addColorStop(0, color+"40"); grad.addColorStop(1, color+"00");
+  ctx.beginPath(); ctx.moveTo(pts[0].x, h); ctx.lineTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) {
-    const xm = (pts[i-1].x + pts[i].x) / 2;
-    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y + pts[i].y) / 2);
+    const xm = (pts[i-1].x+pts[i].x)/2;
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y+pts[i].y)/2);
   }
   ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
-  ctx.lineTo(w - padX, h); ctx.closePath();
-  ctx.fillStyle = grad; ctx.fill();
-
-  ctx.beginPath();
-  ctx.moveTo(pts[0].x, pts[0].y);
+  ctx.lineTo(w-padX, h); ctx.closePath(); ctx.fillStyle = grad; ctx.fill();
+  ctx.beginPath(); ctx.moveTo(pts[0].x, pts[0].y);
   for (let i = 1; i < pts.length; i++) {
-    const xm = (pts[i-1].x + pts[i].x) / 2;
-    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y + pts[i].y) / 2);
+    const xm = (pts[i-1].x+pts[i].x)/2;
+    ctx.quadraticCurveTo(pts[i-1].x, pts[i-1].y, xm, (pts[i-1].y+pts[i].y)/2);
   }
   ctx.lineTo(pts[pts.length-1].x, pts[pts.length-1].y);
-  ctx.strokeStyle = hexColor;
-  ctx.lineWidth   = 2 * dpr;
-  ctx.lineJoin    = "round";
-  ctx.stroke();
+  ctx.strokeStyle = color; ctx.lineWidth = 2*dpr; ctx.lineJoin = "round"; ctx.stroke();
 }
 
-// ══════════════════════════════════════════════════════
-// SERVICES / LINKS
-// ══════════════════════════════════════════════════════
-async function loadLinks() {
+// ══ SETTINGS ════════════════════════════════════
+async function openSettings() {
   try {
-    const res = await fetch("/api/links");
-    links = await res.json();
-    renderLinks();
-  } catch(e) { console.warn("Error loading links:", e); }
+    const res = await fetch("/api/settings");
+    const s = await res.json();
+    document.getElementById("sTgToken").value    = s.telegram_token || "";
+    document.getElementById("sTgChat").value     = s.telegram_chat_id || "";
+    document.getElementById("sAlCpuThr").value   = s.alerts?.cpu?.threshold  || 85;
+    document.getElementById("sAlCpuDur").value   = s.alerts?.cpu?.duration_s || 60;
+    document.getElementById("sAlRamThr").value   = s.alerts?.ram?.threshold  || 90;
+    document.getElementById("sAlRamDur").value   = s.alerts?.ram?.duration_s || 60;
+    document.getElementById("sAlTempThr").value  = s.alerts?.temp?.threshold  || 80;
+    document.getElementById("sAlTempDur").value  = s.alerts?.temp?.duration_s || 30;
+    document.getElementById("sAlDiskThr").value  = s.alerts?.disk?.threshold  || 90;
+    document.getElementById("sAlDiskDur").value  = s.alerts?.disk?.duration_s || 300;
+    document.getElementById("sAlCooldown").value = s.cooldown_minutes || 30;
+    document.getElementById("sPingHosts").value  = (s.ping_hosts || []).join("\n");
+    document.getElementById("sAgUrl").value      = s.adguard_url  || "";
+    document.getElementById("sAgUser").value     = s.adguard_user || "";
+    document.getElementById("sAgPass").value     = "";
+  } catch(e) {}
+  document.getElementById("settingsModal").classList.add("show");
+}
+
+function closeSettings() {
+  document.getElementById("settingsModal").classList.remove("show");
+  document.getElementById("tgTestResult").classList.add("hidden");
+}
+
+async function saveSettings() {
+  const body = {
+    telegram_chat_id: document.getElementById("sTgChat").value.trim(),
+    cooldown_minutes: parseInt(document.getElementById("sAlCooldown").value) || 30,
+    ping_hosts: document.getElementById("sPingHosts").value.split("\n").map(h=>h.trim()).filter(Boolean),
+    adguard_url:  document.getElementById("sAgUrl").value.trim(),
+    adguard_user: document.getElementById("sAgUser").value.trim(),
+    alerts: {
+      cpu:  { threshold: parseInt(document.getElementById("sAlCpuThr").value),  duration_s: parseInt(document.getElementById("sAlCpuDur").value)  },
+      ram:  { threshold: parseInt(document.getElementById("sAlRamThr").value),  duration_s: parseInt(document.getElementById("sAlRamDur").value)  },
+      temp: { threshold: parseInt(document.getElementById("sAlTempThr").value), duration_s: parseInt(document.getElementById("sAlTempDur").value) },
+      disk: { threshold: parseInt(document.getElementById("sAlDiskThr").value), duration_s: parseInt(document.getElementById("sAlDiskDur").value) },
+    },
+  };
+  const token = document.getElementById("sTgToken").value.trim();
+  if (token && token !== "***") body.telegram_token = token;
+  const pass = document.getElementById("sAgPass").value;
+  if (pass) body.adguard_password = pass;
+
+  await fetch("/api/settings", { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
+  closeSettings();
+}
+
+async function testTelegram() {
+  const res = document.getElementById("tgTestResult");
+  res.classList.remove("hidden");
+  res.textContent = "Enviando…";
+  res.style.color = "rgba(255,255,255,.4)";
+  // Save first
+  await saveSettings();
+  try {
+    const r = await fetch("/api/settings/test-telegram", { method:"POST" });
+    const d = await r.json();
+    res.textContent = d.ok ? "✅ Mensaje enviado" : "❌ " + (d.error || "Error");
+    res.style.color = d.ok ? "#10b981" : "#ef4444";
+  } catch(e) {
+    res.textContent = "❌ Error de red"; res.style.color = "#ef4444";
+  }
+  res.classList.remove("hidden");
+}
+
+// ══ LINKS ═══════════════════════════════════════
+async function loadLinks() {
+  try { links = await (await fetch("/api/links")).json(); renderLinks(); }
+  catch(e) {}
 }
 
 function renderLinks() {
   const grid = document.getElementById("linksGrid");
   if (!links.length) {
-    grid.innerHTML = '<p class="text-xs text-white/20 col-span-full text-center py-4">Pulsa "+ Añadir" para agregar servicios</p>';
+    grid.innerHTML = '<p class="text-xs text-white/20 col-span-full text-center py-4">Pulsa "+ Añadir"</p>';
     return;
   }
   grid.innerHTML = links.map(l => `
     <a href="${l.url}" target="_blank" rel="noopener" class="svc-card" style="border-left:3px solid ${l.color}">
+      <div class="health-dot" id="hd-${l.id}" style="background:#6b7280" title="Comprobando…"></div>
       <div class="svc-actions">
         <button class="svc-action" onclick="event.preventDefault();editLink('${l.id}')" title="Editar">✏️</button>
         <button class="svc-action" onclick="event.preventDefault();deleteLink('${l.id}')" title="Eliminar">🗑️</button>
       </div>
-      <div class="text-xl mb-1">${l.icon}</div>
+      <div class="text-xl mb-1 mt-1">${l.icon}</div>
       <div class="text-sm font-medium text-white/80 truncate">${l.name}</div>
       ${l.description ? `<div class="text-[10px] text-white/30 mt-0.5 truncate">${l.description}</div>` : ""}
     </a>`).join("");
 }
 
 function openModal(existing) {
-  const m = document.getElementById("linkModal");
   document.getElementById("modalTitle").textContent = existing ? "Editar Servicio" : "Añadir Servicio";
-  document.getElementById("editId").value  = existing ? existing.id : "";
-  document.getElementById("fName").value   = existing ? existing.name : "";
-  document.getElementById("fUrl").value    = existing ? existing.url  : "";
-  document.getElementById("fIcon").value   = existing ? existing.icon : "";
-  document.getElementById("fDesc").value   = existing ? existing.description : "";
-  selectedEmoji = existing ? existing.icon : "🔗";
-  selectedColor = existing ? existing.color : COLORS[0];
-  renderEmojiPicker();
-  renderColorPicker();
-  m.classList.add("show");
+  document.getElementById("editId").value  = existing?.id || "";
+  document.getElementById("fName").value   = existing?.name || "";
+  document.getElementById("fUrl").value    = existing?.url  || "";
+  document.getElementById("fIcon").value   = existing?.icon || "";
+  document.getElementById("fDesc").value   = existing?.description || "";
+  selectedEmoji = existing?.icon || "🔗";
+  selectedColor = existing?.color || COLORS[0];
+  renderEmojiPicker(); renderColorPicker();
+  document.getElementById("linkModal").classList.add("show");
   document.getElementById("fName").focus();
 }
-
 function closeModal() { document.getElementById("linkModal").classList.remove("show"); }
-function editLink(id) { const link = links.find(l => l.id === id); if (link) openModal(link); }
+function editLink(id) { const l = links.find(l => l.id === id); if (l) openModal(l); }
 
 async function deleteLink(id) {
   if (!confirm("¿Eliminar este servicio?")) return;
-  await fetch(`/api/links/${id}`, { method: "DELETE" });
+  await fetch(`/api/links/${id}`, {method:"DELETE"});
   await loadLinks();
 }
 
 async function saveLink() {
-  const id   = document.getElementById("editId").value;
+  const id = document.getElementById("editId").value;
   const body = {
-    name:        document.getElementById("fName").value.trim(),
-    url:         document.getElementById("fUrl").value.trim(),
-    icon:        document.getElementById("fIcon").value.trim() || selectedEmoji,
-    color:       selectedColor,
+    name: document.getElementById("fName").value.trim(),
+    url:  document.getElementById("fUrl").value.trim(),
+    icon: document.getElementById("fIcon").value.trim() || selectedEmoji,
+    color: selectedColor,
     description: document.getElementById("fDesc").value.trim(),
   };
   if (!body.name || !body.url) return alert("Nombre y URL son obligatorios");
-  if (id) {
-    await fetch(`/api/links/${id}`, { method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
-  } else {
-    await fetch("/api/links", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body) });
-  }
-  closeModal();
-  await loadLinks();
+  await fetch(id ? `/api/links/${id}` : "/api/links", {
+    method: id ? "PUT" : "POST",
+    headers: {"Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  });
+  closeModal(); await loadLinks();
 }
 
 function renderEmojiPicker() {
-  const c = document.getElementById("emojiPicker");
-  c.innerHTML = EMOJIS.map(e =>
+  document.getElementById("emojiPicker").innerHTML = EMOJIS.map(e =>
     `<div class="emoji-opt ${e===selectedEmoji?'selected':''}"
           onclick="selectedEmoji='${e}';document.getElementById('fIcon').value='${e}';renderEmojiPicker()">${e}</div>`
   ).join("");
 }
-
 function renderColorPicker() {
-  const c = document.getElementById("colorPicker");
-  c.innerHTML = COLORS.map(col =>
-    `<div class="color-dot ${col===selectedColor?'selected':''}"
-          style="background:${col}"
+  document.getElementById("colorPicker").innerHTML = COLORS.map(col =>
+    `<div class="color-dot ${col===selectedColor?'selected':''}" style="background:${col}"
           onclick="selectedColor='${col}';renderColorPicker()"></div>`
   ).join("");
 }
 
-// ══════════════════════════════════════════════════════
-// FORMATTERS
-// ══════════════════════════════════════════════════════
+// ══ FORMATTERS ══════════════════════════════════
 function fmtSpeed(kbps) {
   if (kbps == null) return "-- KB/s";
-  if (kbps >= 1024) return (kbps / 1024).toFixed(1) + " MB/s";
-  return kbps.toFixed(1) + " KB/s";
+  return kbps >= 1024 ? (kbps/1024).toFixed(1)+" MB/s" : kbps.toFixed(1)+" KB/s";
 }
-
 function fmtMBps(mbps) {
   if (mbps == null) return "--";
-  if (mbps >= 1024) return (mbps / 1024).toFixed(1) + " GB/s";
-  return mbps.toFixed(2) + " MB/s";
+  return mbps >= 1024 ? (mbps/1024).toFixed(1)+" GB/s" : mbps.toFixed(2)+" MB/s";
 }
-
 function fmtUptime(s) {
-  const d = Math.floor(s / 86400);
-  const h = Math.floor((s % 86400) / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  if (d > 0) return `${d}d ${h}h ${m}m`;
-  if (h > 0) return `${h}h ${m}m`;
-  return `${m}m`;
+  const d=Math.floor(s/86400), h=Math.floor((s%86400)/3600), m=Math.floor((s%3600)/60);
+  return d>0 ? `${d}d ${h}h ${m}m` : h>0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-// ══════════════════════════════════════════════════════
-// LAST UPDATE TICKER
-// ══════════════════════════════════════════════════════
+// ══ LAST UPDATE TICKER ════════════════════════
 setInterval(() => {
-  if (lastMsgTs == null) return;
-  const secs = Math.round((Date.now() - lastMsgTs) / 1000);
-  document.getElementById("lastUpdateText").textContent =
-    secs <= 1 ? "ahora" : `hace ${secs}s`;
+  if (!lastMsgTs) return;
+  const s = Math.round((Date.now()-lastMsgTs)/1000);
+  document.getElementById("lastUpdateText").textContent = s<=1 ? "ahora" : `hace ${s}s`;
 }, 1000);
 
-// ══════════════════════════════════════════════════════
-// INIT
-// ══════════════════════════════════════════════════════
+// ══ INIT ════════════════════════════════════════
 connect();
 loadLinks();
 </script>
