@@ -19,6 +19,7 @@
     input { background: #222; border: 0.5px solid #333; border-radius: 6px; color: #e8e8e6; padding: 6px 10px; font-size: 13px; width: 100%; outline: none; }
     input:focus { border-color: #3d6ee8; }
     canvas { display: block; }
+    .chart-wrap { position: relative; width: 100%; overflow: hidden; }
   </style>
 </head>
 <body class="p-6">
@@ -65,11 +66,11 @@
       <span class="label">Métricas del día</span>
       <input type="date" id="dayPicker" style="width:140px;padding:3px 8px;font-size:11px" />
     </div>
-    <canvas id="mainChart" height="110"></canvas>
+    <div class="chart-wrap"><canvas id="mainChart" height="110"></canvas></div>
   </div>
   <div class="card p-4">
     <div class="label mb-3">Temperatura</div>
-    <canvas id="tempChart" height="110"></canvas>
+    <div class="chart-wrap"><canvas id="tempChart" height="110"></canvas></div>
   </div>
 </div>
 
