@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Homelab</title>
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root { color-scheme: dark; }
+    body { background: #0f0f0f; color: #e8e8e6; font-family: system-ui, sans-serif; }
+    .card { background: #1a1a1a; border: 0.5px solid #2a2a2a; border-radius: 10px; }
+    .bar-track { background: #2a2a2a; border-radius: 2px; height: 3px; }
+    .label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+    .val { font-size: 22px; font-weight: 500; line-height: 1; }
+    .sub { font-size: 11px; color: #555; margin-top: 5px; }
+    .s-dot { width: 6px; height: 6px; border-radius: 50%; background: #3d9e6e; flex-shrink: 0; }
+    .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    input { background: #222; border: 0.5px solid #333; border-radius: 6px; color: #e8e8e6; padding: 6px 10px; font-size: 13px; width: 100%; outline: none; }
+    input:focus { border-color: #3d6ee8; }
+    canvas { display: block; }
+  </style>
+</head>
+<body class="p-6">
+
+<div class="flex items-center justify-between mb-6">
+  <span class="text-sm font-medium tracking-wide">Homelab</span>
+  <div class="flex items-center gap-2 text-xs" style="color:#555">
+    <span class="s-dot"></span>
+    <span id="statusText">cargando...</span>
+    <span id="clock" style="color:#444"></span>
+  </div>
+</div>
+
+<div class="grid grid-cols-4 gap-2 mb-2">
+  <div class="card p-4">
+    <div class="label mb-1">CPU</div>
+    <div class="val"><span id="cpuVal">—</span><span style="font-size:13px;color:#444">%</span></div>
+    <div class="sub" id="cpuPeak">pico: —</div>
+    <div class="bar-track mt-2"><div id="cpuBar" class="h-full rounded" style="background:#3d6ee8;width:0%;transition:width 0.5s"></div></div>
+  </div>
+  <div class="card p-4">
+    <div class="label mb-1">RAM</div>
+    <div class="val"><span id="ramVal">—</span><span style="font-size:13px;color:#444">GB</span></div>
+    <div class="sub" id="ramPeak">pico: —</div>
+    <div class="bar-track mt-2"><div id="ramBar" class="h-full rounded" style="background:#3d9e6e;width:0%;transition:width 0.5s"></div></div>
+  </div>
+  <div class="card p-4">
+    <div class="label mb-1">Temperatura</div>
+    <div class="val"><span id="tempVal">—</span><span style="font-size:13px;color:#444">°C</span></div>
+    <div class="sub" id="tempPeak">pico: —</div>
+    <div class="bar-track mt-2"><div id="tempBar" class="h-full rounded" style="background:#e8943d;width:0%;transition:width 0.5s"></div></div>
+  </div>
+  <div class="card p-4">
+    <div class="label mb-1">Disco</div>
+    <div class="val"><span id="diskVal">—</span><span style="font-size:13px;color:#444">GB</span></div>
+    <div class="sub" id="diskSub">de — GB</div>
+    <div class="bar-track mt-2"><div id="diskBar" class="h-full rounded" style="background:#666;width:0%;transition:width 0.5s"></div></div>
+  </div>
+</div>
+
+<div class="grid gap-2 mb-2" style="grid-template-columns:2fr 1fr">
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <span class="label">Métricas del día</span>
+      <input type="date" id="dayPicker" style="width:140px;padding:3px 8px;font-size:11px" />
+    </div>
+    <canvas id="mainChart" height="110"></canvas>
+  </div>
+  <div class="card p-4">
+    <div class="label mb-3">Temperatura</div>
+    <canvas id="tempChart" height="110"></canvas>
+  </div>
+</div>
+
+<div class="grid grid-cols-2 gap-2">
+  <div class="card p-4">
+    <div class="flex items-center justify-between mb-3">
+      <span class="label">Servicios</span>
+      <button onclick="openModal()" style="background:#222;border:0.5px solid #333;border-radius:6px;padding:3px 10px;font-size:11px;color:#888;cursor:pointer">+ añadir</button>
+    </div>
+    <div id="servicesList"></div>
+  </div>
+  <div class="card p-4">
+    <div class="label mb-3">Eventos recientes</div>
+    <div id="eventsList"></div>
+  </div>
+</div>
+
+<div id="modal" class="modal-bg" style="display:none">
+  <div class="card p-6" style="width:320px">
+    <div class="text-sm font-medium mb-4">Añadir servicio</div>
+    <div class="flex flex-col gap-3">
+      <input id="svcName" placeholder="Nombre (ej. Coolify)" />
+      <input id="svcUrl" placeholder="URL (ej. http://192.168.1.10:8000)" />
+      <input id="svcPort" placeholder="Puerto (opcional)" />
+    </div>
+    <div class="flex gap-2 mt-4">
+      <button onclick="saveService()" style="flex:1;background:#3d6ee8;border:none;border-radius:6px;padding:7px;font-size:13px;color:#fff;cursor:pointer">Guardar</button>
+      <button onclick="closeModal()" style="flex:1;background:#222;border:0.5px solid #333;border-radius:6px;padding:7px;font-size:13px;color:#888;cursor:pointer">Cancelar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const chartDefaults = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { labels: { color: '#555', font: { size: 11 }, boxWidth: 10, padding: 8 } } },
+  scales: {
+    x: { ticks: { color: '#444', font: { size: 10 }, maxTicksLimit: 8 }, grid: { color: '#1f1f1f' } },
+    y: { ticks: { color: '#444', font: { size: 10 } }, grid: { color: '#1f1f1f' } }
+  }
+};
+
+const mainChart = new Chart(document.getElementById('mainChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { label: 'CPU %', data: [], borderColor: '#3d6ee8', borderWidth: 1.5, pointRadius: 0, tension: 0.4 },
+    { label: 'RAM %', data: [], borderColor: '#3d9e6e', borderWidth: 1.5, pointRadius: 0, tension: 0.4 }
+  ]},
+  options: { ...chartDefaults, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 0, max: 100 } } }
+});
+
+const tempChart = new Chart(document.getElementById('tempChart'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { data: [], borderColor: '#e8943d', borderWidth: 1.5, pointRadius: 0, tension: 0.4, fill: true, backgroundColor: 'rgba(232,148,61,0.06)' }
+  ]},
+  options: { ...chartDefaults, plugins: { legend: { display: false } }, scales: { ...chartDefaults.scales, y: { ...chartDefaults.scales.y, min: 30 } } }
+});
+
+function fmt(ts) {
+  const d = new Date(ts * 1000);
+  return d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
+}
+
+async function loadHistory(day) {
+  const url = day ? `/api/history?day=${day}` : '/api/history';
+  const res = await fetch(url);
+  const data = await res.json();
+  const labels = data.map(r => fmt(r.ts));
+  mainChart.data.labels = labels;
+  mainChart.data.datasets[0].data = data.map(r => r.cpu);
+  mainChart.data.datasets[1].data = data.map(r => r.ram);
+  mainChart.update();
+  tempChart.data.labels = labels;
+  tempChart.data.datasets[0].data = data.map(r => r.temp);
+  tempChart.update();
+}
+
+async function loadPeaks(day) {
+  const url = day ? `/api/peaks?day=${day}` : '/api/peaks';
+  const res = await fetch(url);
+  const p = await res.json();
+  if (p.cpu) document.getElementById('cpuPeak').textContent = `pico: ${p.cpu.value}% · ${p.cpu.time}`;
+  if (p.ram) document.getElementById('ramPeak').textContent = `pico: ${p.ram.value}% · ${p.ram.time}`;
+  if (p.temp && p.temp.value) document.getElementById('tempPeak').textContent = `pico: ${p.temp.value}°C · ${p.temp.time}`;
+}
+
+async function loadServices() {
+  const res = await fetch('/api/services');
+  const services = await res.json();
+  const el = document.getElementById('servicesList');
+  if (!services.length) { el.innerHTML = '<div style="font-size:12px;color:#444;text-align:center;padding:1rem">Sin servicios. Añade el primero.</div>'; return; }
+  el.innerHTML = services.map(s => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:0.5px solid #222">
+      <div class="s-dot"></div>
+      <a href="${s.url}" target="_blank" style="font-size:12px;color:#bbb;flex:1;text-decoration:none">${s.name}</a>
+      ${s.port ? `<span style="font-size:11px;color:#444">:${s.port}</span>` : ''}
+      <button onclick="deleteService(${s.id})" style="background:none;border:none;color:#333;cursor:pointer;font-size:14px">×</button>
+    </div>
+  `).join('');
+}
+
+async function loadEvents() {
+  const res = await fetch('/api/events');
+  const events = await res.json();
+  const el = document.getElementById('eventsList');
+  if (!events.length) { el.innerHTML = '<div style="font-size:12px;color:#444;text-align:center;padding:1rem">Sin eventos</div>'; return; }
+  const icons = { warning: '🟠', info: '🟢', error: '🔴' };
+  el.innerHTML = events.slice(0, 8).map(e => `
+    <div style="display:flex;gap:10px;padding:7px 0;border-bottom:0.5px solid #222;align-items:flex-start">
+      <span style="font-size:11px">${icons[e.level] || '🔵'}</span>
+      <span style="font-size:12px;color:#bbb;flex:1">${e.message}</span>
+      <span style="font-size:11px;color:#444">${fmt(e.ts)}</span>
+    </div>
+  `).join('');
+}
+
+function openModal() { document.getElementById('modal').style.display = 'flex'; }
+function closeModal() { document.getElementById('modal').style.display = 'none'; }
+
+async function saveService() {
+  const name = document.getElementById('svcName').value.trim();
+  const url = document.getElementById('svcUrl').value.trim();
+  const port = document.getElementById('svcPort').value.trim();
+  if (!name || !url) return;
+  await fetch('/api/services', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, url, port }) });
+  closeModal();
+  document.getElementById('svcName').value = '';
+  document.getElementById('svcUrl').value = '';
+  document.getElementById('svcPort').value = '';
+  loadServices();
+}
+
+async function deleteService(id) {
+  await fetch(`/api/services/${id}`, { method: 'DELETE' });
+  loadServices();
+}
+
+const evtSource = new EventSource('/api/stream');
+evtSource.onmessage = (e) => {
+  const d = JSON.parse(e.data);
+  document.getElementById('cpuVal').textContent = d.cpu;
+  document.getElementById('cpuBar').style.width = d.cpu + '%';
+  document.getElementById('ramVal').textContent = d.ram_used_gb;
+  document.getElementById('ramBar').style.width = d.ram_pct + '%';
+  if (d.temp) {
+    document.getElementById('tempVal').textContent = d.temp;
+    document.getElementById('tempBar').style.width = Math.min(d.temp, 100) + '%';
+  }
+  document.getElementById('statusText').textContent = 'todos los servicios activos';
+};
+
+setInterval(() => {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+}, 1000);
+
+const picker = document.getElementById('dayPicker');
+picker.value = new Date().toISOString().split('T')[0];
+picker.addEventListener('change', () => { loadHistory(picker.value); loadPeaks(picker.value); });
+
+async function loadCurrent() {
+  const res = await fetch('/api/current');
+  const d = await res.json();
+  document.getElementById('diskVal').textContent = d.disk_used_gb;
+  document.getElementById('diskSub').textContent = `de ${d.disk_total_gb} GB · ${d.disk_pct}% usado`;
+  document.getElementById('diskBar').style.width = d.disk_pct + '%';
+}
+
+loadCurrent();
+loadHistory();
+loadPeaks();
+loadServices();
+loadEvents();
+setInterval(loadEvents, 30000);
+setInterval(loadCurrent, 60000);
+setInterval(() => loadHistory(picker.value), 120000);
+setInterval(() => loadPeaks(picker.value), 120000);
+</script>
+</body>
+</html>
